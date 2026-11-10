@@ -81,7 +81,7 @@ This spec lives at the workspace root and is versioned in its own small Git repo
 
 ## 4. Data model (PostgreSQL via Prisma)
 
-Money is stored as integer cents (`Int`). IDs are UUIDs. Sizes are EU sizes stored as `Decimal(4,1)` (e.g. `42`, `42.5`).
+Money is stored as integer cents (`Int`). IDs are UUIDs. All timestamps are `timestamptz`, and the API's database sessions run with `TimeZone=UTC` (required by the Prisma pg driver adapter, which sends dates without an offset). Sizes are EU sizes stored as `Decimal(4,1)` (e.g. `42`, `42.5`).
 
 | Model | Key fields | Constraints / indexes |
 |---|---|---|
@@ -152,13 +152,13 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 - `GET /wishlist`, `POST /wishlist` `{ productId }`, `DELETE /wishlist/:productId`
 
 ### Admin (role `ADMIN`)
-- `GET /admin/products?q&page&pageSize&includeInactive`, `GET /admin/products/:id`
+- `GET /admin/products?q&page&pageSize&includeInactive` (items include `totalStock`), `GET /admin/products/:id` (includes `imageRefs` — the stored keys/URLs — plus `brandId`, `categoryId`)
 - `POST /admin/products`, `PATCH /admin/products/:id`, `DELETE /admin/products/:id`
 - `PUT /admin/products/:id/variants` `{ variants: [{ size, stock }] }` — upsert sizes and set absolute stock; sizes omitted are removed if never ordered (else stock set to 0)
 - `PATCH /admin/variants/:id` `{ stock }`
-- `GET /admin/orders?status&page&pageSize`, `PATCH /admin/orders/:id/status` `{ status }`
-- `GET /admin/summary?from&to`
-- `POST /admin/uploads/presign` `{ contentType, fileName }` → `{ uploadUrl, publicUrl }` (501 if storage not configured)
+- `GET /admin/orders?status&q&page&pageSize` (`q` matches customer name/email or recipient; items include `customer`), `PATCH /admin/orders/:id/status` `{ status: "SHIPPED" | "DELIVERED" }`
+- `GET /admin/summary?from&to` (ISO dates; default last 30 days; max 1 year) → `{ revenueCents, paidOrders, averageOrderCents, awaitingShipment, ordersByStatus, revenueByDay[], topProducts[5], lowStock[10] }`
+- `POST /admin/uploads/presign` `{ contentType, fileName }` → `{ uploadUrl, key, publicUrl }` (PUT URL valid 5 minutes; 501 if storage not configured). The returned `key` is stored in `images`.
 - `GET /admin/brands`, `GET /admin/categories` (also public via facets)
 
 ## 6. Non-functional requirements
@@ -167,10 +167,10 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 - **Pagination** on every list endpoint, with enforced maximum page size.
 - **Indexes** on all filtered/sorted columns (see §4).
 - **Images** are absolute URLs on cloud storage/CDN (`CDN_BASE_URL`); the API never serves image bytes.
-- **Rate limiting**: global limiter (default 300 req / 15 min / IP) and a strict limiter on auth endpoints (default 20 / 15 min / IP). The in-memory store is per instance; a shared store (e.g. Redis) should be configured when running multiple instances.
+- **Rate limiting**: global limiter (default 300 req / 15 min / IP; health checks and the Stripe webhook exempt) and a strict limiter on auth endpoints (default 20 / 15 min / IP). For login only **failed** attempts count (brute-force protection without locking out legitimate users); registration and password change count every request. The in-memory store is per instance; a shared store (e.g. Redis) should be configured when running multiple instances.
 - **Security**: bcrypt (cost 12) password hashes, Helmet, CORS allow-list (`CORS_ORIGINS`), Zod validation on every input, request body limit 100kb, JWT secret ≥ 32 chars required.
 - **Validation**: Zod on the back-end for every body/query/param; Zod on front-end forms.
-- **Testing**: back-end integration tests (Vitest + Supertest) against a real PostgreSQL, including a concurrency test for the last pair; front-end type-check, unit tests and production build.
+- **Testing**: back-end integration tests (Vitest + Supertest) against a real PostgreSQL, including a concurrency test for the last pair; front-end type-check, lint, unit tests (Vitest + Testing Library), production build, and Playwright end-to-end tests against the real API on desktop and mobile viewports.
 
 ## 7. Front-End pages
 
@@ -200,3 +200,4 @@ Local development uses `embedded-postgres` (real PostgreSQL binaries via npm, `n
 ## 9. Changelog
 - v1.0 — initial specification.
 - v1.1 — added `POST /orders/:id/payment`; checkout `payment` may be `null` if the provider is unreachable (stock stays reserved until paid, cancelled or expired). Cart/order endpoints are available to any authenticated role; `/admin/*` requires `ADMIN`.
+- v1.2 — timestamps are `timestamptz` with UTC sessions; login limiter counts failed attempts only; admin endpoint response details (`imageRefs`, `totalStock`, `customer`, order search `q`, summary shape, presign `key`). Front-end e2e tests (Playwright, desktop + mobile) added to §6 testing.
