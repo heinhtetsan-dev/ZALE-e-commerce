@@ -9,6 +9,9 @@ import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { globalLimiter } from "./middleware/rate-limit.js";
 import { adminRouter } from "./modules/admin/admin.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
+import { cartRouter } from "./modules/cart/cart.routes.js";
+import { orderRouter } from "./modules/orders/order.routes.js";
+import { paymentConfig } from "./modules/payments/payment.service.js";
 import { productRouter } from "./modules/products/product.routes.js";
 
 export function createApp() {
@@ -42,6 +45,11 @@ export function createApp() {
 
   api.use("/auth", authRouter);
   api.use("/products", productRouter);
+  api.use("/cart", cartRouter);
+  api.use("/orders", orderRouter);
+  api.get("/payments/config", (_req, res) => {
+    res.json(paymentConfig());
+  });
   api.use("/admin", adminRouter);
 
   app.use("/api/v1", api);
