@@ -1,5 +1,10 @@
 import type { ReactNode } from 'react'
 import { createBrowserRouter } from 'react-router'
+import { AdminDashboardPage } from './admin/AdminDashboardPage'
+import { AdminLayout } from './admin/AdminLayout'
+import { AdminOrdersPage } from './admin/AdminOrdersPage'
+import { AdminProductEditPage } from './admin/AdminProductEditPage'
+import { AdminProductsPage } from './admin/AdminProductsPage'
 import { Layout } from './components/Layout'
 import { RequireAuth } from './components/RequireAuth'
 import { AccountPage } from './pages/AccountPage'
@@ -32,6 +37,21 @@ export const router = createBrowserRouter([
       { path: 'account', element: authed(<AccountPage />) },
       { path: 'account/orders', element: authed(<OrdersPage />) },
       { path: 'account/orders/:id', element: authed(<OrderDetailPage />) },
+      {
+        path: 'admin',
+        element: (
+          <RequireAuth role="ADMIN">
+            <AdminLayout />
+          </RequireAuth>
+        ),
+        children: [
+          { index: true, element: <AdminDashboardPage /> },
+          { path: 'products', element: <AdminProductsPage /> },
+          { path: 'products/new', element: <AdminProductEditPage /> },
+          { path: 'products/:id', element: <AdminProductEditPage /> },
+          { path: 'orders', element: <AdminOrdersPage /> },
+        ],
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
