@@ -8,8 +8,12 @@ export const SORTS = [
 
 export type Sort = (typeof SORTS)[number]['value']
 
+/** Shopping audience. Unisex shoes appear under both. */
+export type Audience = 'men' | 'women'
+
 export interface CatalogFilters {
   q: string
+  gender?: Audience
   brand: string[]
   category: string[]
   color: string[]
@@ -31,8 +35,10 @@ const int = (v: string | null) => {
 export function parseFilters(params: URLSearchParams): CatalogFilters {
   const sort = params.get('sort')
   const page = Number(params.get('page'))
+  const gender = params.get('gender')
   return {
     q: params.get('q') ?? '',
+    gender: gender === 'men' || gender === 'women' ? gender : undefined,
     brand: list(params.get('brand')),
     category: list(params.get('category')),
     color: list(params.get('color')),
@@ -46,6 +52,7 @@ export function parseFilters(params: URLSearchParams): CatalogFilters {
 
 export function filtersToParams(f: CatalogFilters): URLSearchParams {
   const p = new URLSearchParams()
+  if (f.gender) p.set('gender', f.gender)
   if (f.q) p.set('q', f.q)
   if (f.brand.length) p.set('brand', f.brand.join(','))
   if (f.category.length) p.set('category', f.category.join(','))
@@ -58,6 +65,7 @@ export function filtersToParams(f: CatalogFilters): URLSearchParams {
   return p
 }
 
+/** Counts sidebar filters; the audience is a tab, not a filter chip. */
 export const activeFilterCount = (f: CatalogFilters) =>
   f.brand.length + f.category.length + f.color.length + f.size.length + (f.minPrice !== undefined || f.maxPrice !== undefined ? 1 : 0)
 

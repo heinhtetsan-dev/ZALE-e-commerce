@@ -12,6 +12,19 @@ export const productFormSchema = z.object({
   brandId: z.string().min(1, 'Choose a brand'),
   categoryId: z.string().min(1, 'Choose a category'),
   color: z.string().trim().min(1, 'Color is required').max(30),
+  colorway: z.string().trim().max(80),
+  gender: z.enum(['MEN', 'WOMEN', 'UNISEX']),
+  styleGroup: z
+    .string()
+    .trim()
+    .max(80)
+    .regex(/^([a-z0-9]+(?:-[a-z0-9]+)*)?$/, 'Lowercase letters, numbers and hyphens only'),
+  imageCredit: z.string().trim().max(500),
+  imageSourceUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((v) => v === '' || /^https:\/\//.test(v), 'Must be an https URL'),
   price: z
     .string()
     .trim()

@@ -6,7 +6,7 @@ import { ProductReviews } from '../components/ProductReviews'
 import { ErrorBox, Notice, ProductImage, Spinner, Stars } from '../components/ui'
 import { WishlistButton } from '../components/WishlistButton'
 import { api, ApiError, errorMessage } from '../lib/api'
-import { formatSize, money, stockLabel } from '../lib/format'
+import { formatSize, genderLabel, money, stockLabel } from '../lib/format'
 import type { ProductDetail, Variant } from '../lib/types'
 
 export function ProductDetailPage() {
@@ -18,6 +18,16 @@ export function ProductDetailPage() {
   const [imageIndex, setImageIndex] = useState(0)
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
   const [sizeError, setSizeError] = useState(false)
+
+  // Switching colorway reuses this component: reset per-product selections.
+  const [shownSlug, setShownSlug] = useState(slug)
+  if (shownSlug !== slug) {
+    setShownSlug(slug)
+    setSelected(null)
+    setImageIndex(0)
+    setMessage(null)
+    setSizeError(false)
+  }
 
   if (product.isPending) return <Spinner />
   if (product.isError) {
@@ -32,6 +42,7 @@ export function ProductDetailPage() {
   }
 
   const p = product.data
+  const audience = p.gender === 'MEN' ? 'men' : p.gender === 'WOMEN' ? 'women' : null
   // Keep the selection in sync with fresh stock data after refetches.
   const current = selected ? (p.variants.find((v) => v.id === selected.id) ?? null) : null
   const inStockSizes = p.variants.filter((v) => v.stock > 0)
@@ -63,11 +74,11 @@ export function ProductDetailPage() {
   return (
     <div>
       <nav className="mb-4 text-sm text-stone-500" aria-label="Breadcrumb">
-        <Link to="/" className="hover:underline">
-          Shop
+        <Link to={audience ? `/?gender=${audience}` : '/'} className="hover:underline">
+          {audience === 'men' ? "Men's" : audience === 'women' ? "Women's" : 'Shop'}
         </Link>{' '}
         /{' '}
-        <Link to={`/?category=${p.category.slug}`} className="hover:underline">
+        <Link to={`/?${audience ? `gender=${audience}&` : ''}category=${p.category.slug}`} className="hover:underline">
           {p.category.name}
         </Link>{' '}
         / <span className="text-stone-900">{p.name}</span>
@@ -76,8 +87,19 @@ export function ProductDetailPage() {
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
         <div>
           <div className="card overflow-hidden">
-            <ProductImage src={p.images[imageIndex] ?? null} alt={p.name} className="aspect-square w-full" />
+            <ProductImage src={p.images[imageIndex] ?? null} alt={`${p.name} in ${p.colorway ?? p.color}`} className="aspect-square w-full" />
           </div>
+          {p.imageCredit && (
+            <p className="mt-2 text-xs text-stone-500">
+              {p.imageSourceUrl ? (
+                <a href={p.imageSourceUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                  {p.imageCredit}
+                </a>
+              ) : (
+                p.imageCredit
+              )}
+            </p>
+          )}
           {p.images.length > 1 && (
             <div className="mt-3 flex gap-3">
               {p.images.map((img, i) => (
@@ -96,7 +118,9 @@ export function ProductDetailPage() {
         </div>
 
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-stone-500">{p.brand.name}</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+            {p.brand.name} · {genderLabel(p.gender)}
+          </p>
           <div className="mt-1 flex items-start gap-3">
             <h1 className="flex-1 text-2xl font-bold tracking-tight sm:text-3xl">{p.name}</h1>
             <WishlistButton productId={p.id} />
@@ -115,12 +139,38 @@ export function ProductDetailPage() {
           </div>
           <p className="mt-4 text-2xl font-bold">{money(p.priceCents)}</p>
           <p className="mt-1 text-sm text-stone-600">
-            {p.category.name} · {p.color}
+            {genderLabel(p.gender)} {p.category.name.toLowerCase()} shoe
           </p>
+
+          <div className="mt-6">
+            <p className="text-sm">
+              <span className="font-semibold">Colorway:</span> {p.colorway ?? p.color}
+            </p>
+            {p.colorways.length > 1 && (
+              <ul className="mt-2 flex flex-wrap gap-2" aria-label="Other colorways">
+                {p.colorways.map((c) => {
+                  const isCurrent = c.slug === p.slug
+                  return (
+                    <li key={c.slug}>
+                      <Link
+                        to={`/products/${c.slug}`}
+                        aria-current={isCurrent ? 'page' : undefined}
+                        title={`${c.colorway ?? c.color}${c.inStock ? '' : ' (sold out)'}`}
+                        aria-label={`${c.colorway ?? c.color}${c.inStock ? '' : ', sold out'}`}
+                        className={`relative block size-16 overflow-hidden rounded-lg border-2 ${isCurrent ? 'border-stone-900' : 'border-stone-200 hover:border-stone-500'} ${c.inStock ? '' : 'opacity-50'}`}
+                      >
+                        <ProductImage src={c.image} alt="" className="size-full" />
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
 
           <fieldset className="mt-6">
             <legend className="mb-2 flex w-full items-center justify-between text-sm font-semibold">
-              <span>Select size (EU)</span>
+              <span>Select size (EU{p.gender === 'UNISEX' ? ', unisex' : p.gender === 'MEN' ? ", men's" : ", women's"})</span>
               {current && <span className={current.stockStatus === 'low_stock' ? 'text-amber-700' : 'text-emerald-700'}>{stockLabel(current.stock)}</span>}
             </legend>
             {p.variants.length === 0 ? (

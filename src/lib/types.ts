@@ -25,11 +25,16 @@ export interface Ref {
   slug: string
 }
 
+export type Gender = 'MEN' | 'WOMEN' | 'UNISEX'
+
 export interface ProductCard {
   id: string
   slug: string
   name: string
   color: string
+  colorway: string | null
+  gender: Gender
+  styleGroup: string | null
   priceCents: number
   image: string | null
   brand: Ref
@@ -49,10 +54,21 @@ export interface Variant {
   stockStatus: StockStatus
 }
 
+export interface ColorwayLink {
+  slug: string
+  colorway: string | null
+  color: string
+  image: string | null
+  inStock: boolean
+}
+
 export interface ProductDetail extends ProductCard {
   description: string
   images: string[]
+  imageCredit: string | null
+  imageSourceUrl: string | null
   variants: Variant[]
+  colorways: ColorwayLink[]
 }
 
 export interface Facets {

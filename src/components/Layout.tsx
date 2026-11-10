@@ -16,9 +16,10 @@ export function Layout() {
   const navigate = useNavigate()
 
   // Close the mobile menu whenever the route changes (state adjusted during render).
-  const [menuPath, setMenuPath] = useState(location.pathname)
-  if (menuPath !== location.pathname) {
-    setMenuPath(location.pathname)
+  const here = location.pathname + location.search
+  const [menuPath, setMenuPath] = useState(here)
+  if (menuPath !== here) {
+    setMenuPath(here)
     setMenuOpen(false)
   }
 
@@ -27,11 +28,19 @@ export function Layout() {
     navigate('/')
   }
 
+  // NavLink matches on the path only, so the Men/Women state comes from ?gender.
+  const audience = location.pathname === '/' ? (new URLSearchParams(location.search).get('gender') ?? 'all') : null
+  const shopLink = (to: string, key: string, label: string) => (
+    <Link to={to} className={navLinkClass({ isActive: audience === key })} aria-current={audience === key ? 'page' : undefined}>
+      {label}
+    </Link>
+  )
+
   const links = (
     <>
-      <NavLink to="/" end className={navLinkClass}>
-        Shop
-      </NavLink>
+      {shopLink('/?gender=men', 'men', 'Men')}
+      {shopLink('/?gender=women', 'women', 'Women')}
+      {shopLink('/', 'all', 'All shoes')}
       {user && (
         <>
           <NavLink to="/wishlist" className={navLinkClass}>

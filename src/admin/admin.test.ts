@@ -3,7 +3,22 @@ import { fillDays } from './chartData'
 import { productFormSchema, variantsSchema } from './productForm'
 
 describe('productFormSchema', () => {
-  const base = { name: 'Shoe', slug: '', description: 'Nice', brandId: 'b', categoryId: 'c', color: 'Red', price: '129.99', images: 'https://cdn.x/a.jpg\n\nproducts/b.jpg', isActive: true }
+  const base = {
+    name: 'Shoe',
+    slug: '',
+    description: 'Nice',
+    brandId: 'b',
+    categoryId: 'c',
+    color: 'Red',
+    colorway: 'University Red/White',
+    gender: 'MEN' as const,
+    styleGroup: 'shoe',
+    price: '129.99',
+    images: 'https://cdn.x/a.jpg\n\nproducts/b.jpg',
+    imageCredit: '',
+    imageSourceUrl: '',
+    isActive: true,
+  }
 
   it('converts price to cents, splits images and drops an empty slug', () => {
     const r = productFormSchema.parse(base)
@@ -14,6 +29,8 @@ describe('productFormSchema', () => {
     expect(productFormSchema.safeParse({ ...base, price: '12.345' }).success).toBe(false)
     expect(productFormSchema.safeParse({ ...base, slug: 'Bad Slug' }).success).toBe(false)
     expect(productFormSchema.safeParse({ ...base, images: 'http://insecure/a.jpg' }).success).toBe(false)
+    expect(productFormSchema.safeParse({ ...base, styleGroup: 'Air Max' }).success).toBe(false)
+    expect(productFormSchema.safeParse({ ...base, imageSourceUrl: 'http://x.org/a' }).success).toBe(false)
   })
 })
 

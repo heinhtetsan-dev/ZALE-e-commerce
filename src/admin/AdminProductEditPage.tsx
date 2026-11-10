@@ -8,7 +8,22 @@ import { fieldErrorsOf } from '../lib/forms'
 import { productFormSchema, variantsSchema, type ProductFormValues } from './productForm'
 import type { AdminProduct, Lookup } from './types'
 
-const emptyForm: ProductFormValues = { name: '', slug: '', description: '', brandId: '', categoryId: '', color: '', price: '', images: '', isActive: true }
+const emptyForm: ProductFormValues = {
+  name: '',
+  slug: '',
+  description: '',
+  brandId: '',
+  categoryId: '',
+  color: '',
+  colorway: '',
+  gender: 'UNISEX',
+  styleGroup: '',
+  price: '',
+  images: '',
+  imageCredit: '',
+  imageSourceUrl: '',
+  isActive: true,
+}
 
 const toForm = (p: AdminProduct): ProductFormValues => ({
   name: p.name,
@@ -17,8 +32,13 @@ const toForm = (p: AdminProduct): ProductFormValues => ({
   brandId: p.brandId ?? p.brand.id,
   categoryId: p.categoryId ?? p.category.id,
   color: p.color,
+  colorway: p.colorway ?? '',
+  gender: p.gender,
+  styleGroup: p.styleGroup ?? '',
   price: (p.priceCents / 100).toFixed(2),
   images: (p.imageRefs ?? p.images).join('\n'),
+  imageCredit: p.imageCredit ?? '',
+  imageSourceUrl: p.imageSourceUrl ?? '',
   isActive: p.isActive,
 })
 
@@ -93,8 +113,29 @@ function ProductForm({ product, brands, categories }: { product?: AdminProduct; 
           </select>
           <FieldError message={errors.categoryId} />
         </div>
-        <FormField id="color" label="Color" value={values.color} error={errors.color} onChange={set('color')} />
+        <div>
+          <label className="label" htmlFor="gender">
+            Gender
+          </label>
+          <select id="gender" className="input" value={values.gender} onChange={set('gender')}>
+            <option value="MEN">Men's</option>
+            <option value="WOMEN">Women's</option>
+            <option value="UNISEX">Unisex (listed under both)</option>
+          </select>
+        </div>
         <FormField id="price" label="Price (USD)" inputMode="decimal" value={values.price} error={errors.price} onChange={set('price')} />
+        <FormField id="color" label="Base color (for filters)" placeholder="e.g. White" value={values.color} error={errors.color} onChange={set('color')} />
+        <FormField id="colorway" label="Colorway name" placeholder="e.g. White/Black-Infrared" value={values.colorway} error={errors.colorway} onChange={set('colorway')} />
+        <div className="sm:col-span-2">
+          <FormField
+            id="styleGroup"
+            label="Style group (links colorways of the same model)"
+            placeholder="e.g. air-max-90"
+            value={values.styleGroup}
+            error={errors.styleGroup}
+            onChange={set('styleGroup')}
+          />
+        </div>
       </div>
       <div>
         <label className="label" htmlFor="description">
@@ -109,6 +150,10 @@ function ProductForm({ product, brands, categories }: { product?: AdminProduct; 
         </label>
         <textarea id="images" rows={3} className="input font-mono text-xs" value={values.images} onChange={set('images')} placeholder="https://cdn.example.com/products/shoe.jpg" aria-invalid={!!errors.images} />
         <FieldError message={errors.images} />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField id="imageCredit" label="Photo credit (required by CC licenses)" placeholder="Photo: Jane Doe, CC BY-SA 4.0" value={values.imageCredit} error={errors.imageCredit} onChange={set('imageCredit')} />
+        <FormField id="imageSourceUrl" label="Photo source URL" placeholder="https://commons.wikimedia.org/wiki/File:…" value={values.imageSourceUrl} error={errors.imageSourceUrl} onChange={set('imageSourceUrl')} />
       </div>
       <label className="flex items-center gap-3 text-sm">
         <input

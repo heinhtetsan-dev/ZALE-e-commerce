@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { FilterPanel } from '../catalog/FilterPanel'
-import { activeFilterCount, filtersToParams, parseFilters, SORTS, type CatalogFilters, type Sort } from '../catalog/filters'
+import { activeFilterCount, filtersToParams, parseFilters, SORTS, type Audience, type CatalogFilters, type Sort } from '../catalog/filters'
 import { Pagination } from '../components/Pagination'
 import { ProductCard } from '../components/ProductCard'
 import { EmptyState, ErrorBox, Spinner } from '../components/ui'
@@ -10,6 +10,18 @@ import { api, errorMessage } from '../lib/api'
 import type { Facets, Page, ProductCard as Product } from '../lib/types'
 
 const PAGE_SIZE = 12
+
+const AUDIENCES: Array<{ value?: Audience; label: string }> = [
+  { value: undefined, label: 'All' },
+  { value: 'men', label: 'Men' },
+  { value: 'women', label: 'Women' },
+]
+
+const HERO = {
+  all: { kicker: 'New season', title: 'Find your next favourite pair.' },
+  men: { kicker: "Men's shoes", title: 'Sneakers, runners and boots for men.' },
+  women: { kicker: "Women's shoes", title: 'Sneakers, runners and boots for women.' },
+}
 
 function SearchForm({ initial, onSearch }: { initial: string; onSearch: (q: string) => void }) {
   const [search, setSearch] = useState(initial)
@@ -45,13 +57,19 @@ export function ProductListPage() {
   const filters = parseFilters(params)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  const facets = useQuery({ queryKey: ['facets'], queryFn: () => api<Facets>('/products/facets'), staleTime: 5 * 60_000 })
+  const facets = useQuery({
+    queryKey: ['facets', filters.gender ?? 'all'],
+    queryFn: () => api<Facets>('/products/facets', { query: { gender: filters.gender } }),
+    staleTime: 5 * 60_000,
+    placeholderData: keepPreviousData,
+  })
   const products = useQuery({
     queryKey: ['products', filters],
     queryFn: ({ signal }) =>
       api<Page<Product>>('/products', {
         signal,
         query: {
+          gender: filters.gender,
           q: filters.q || undefined,
           brand: filters.brand,
           category: filters.category,
@@ -75,15 +93,36 @@ export function ProductListPage() {
   }
 
   const activeCount = activeFilterCount(filters)
-  const clearAll = () => setParams(filtersToParams({ q: filters.q, brand: [], category: [], color: [], size: [], sort: filters.sort, page: 1 }))
+  const clearAll = () => setParams(filtersToParams({ q: filters.q, gender: filters.gender, brand: [], category: [], color: [], size: [], sort: filters.sort, page: 1 }))
+  // Men's and women's size runs differ, so a size filter doesn't carry over.
+  const switchAudience = (gender?: Audience) => update({ gender, size: [] })
+  const hero = HERO[filters.gender ?? 'all']
 
   return (
     <div>
       <section className="mb-6 overflow-hidden rounded-2xl bg-stone-900 px-6 py-8 text-white sm:px-10 sm:py-12">
-        <p className="text-sm font-semibold uppercase tracking-widest text-brand-500">New season</p>
-        <h1 className="mt-2 max-w-xl text-3xl font-extrabold tracking-tight sm:text-4xl">Find your next favourite pair.</h1>
+        <p className="text-sm font-semibold uppercase tracking-widest text-brand-500">{hero.kicker}</p>
+        <h1 className="mt-2 max-w-xl text-3xl font-extrabold tracking-tight sm:text-4xl">{hero.title}</h1>
         <SearchForm key={filters.q} initial={filters.q} onSearch={(q) => update({ q })} />
       </section>
+
+      <div className="mb-6 flex gap-1 border-b border-stone-200" role="tablist" aria-label="Shop for">
+        {AUDIENCES.map((a) => {
+          const selected = filters.gender === a.value
+          return (
+            <button
+              key={a.label}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => switchAudience(a.value)}
+              className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-semibold transition ${selected ? 'border-stone-900 text-stone-900' : 'border-transparent text-stone-500 hover:text-stone-900'}`}
+            >
+              {a.label}
+            </button>
+          )
+        })}
+      </div>
 
       <div className="flex gap-8">
         <aside className="hidden w-60 shrink-0 lg:block" aria-label="Filters">

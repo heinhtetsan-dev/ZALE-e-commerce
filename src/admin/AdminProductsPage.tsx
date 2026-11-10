@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router'
 import { Pagination } from '../components/Pagination'
 import { EmptyState, ErrorBox, ProductImage, Spinner } from '../components/ui'
 import { api, errorMessage } from '../lib/api'
-import { money } from '../lib/format'
+import { genderLabel, money } from '../lib/format'
 import type { Page } from '../lib/types'
 import type { AdminProduct } from './types'
 
@@ -78,7 +78,7 @@ export function AdminProductsPage() {
                         <ProductImage src={p.image} alt="" className="size-10 rounded-md" />
                         <span>
                           {p.name}
-                          <span className="block text-xs font-normal text-stone-500">{p.brand.name}</span>
+                          <span className="block text-xs font-normal text-stone-500">{p.brand.name} · {genderLabel(p.gender)}{p.colorway ? ` · ${p.colorway}` : ''}</span>
                         </span>
                       </Link>
                     </td>
