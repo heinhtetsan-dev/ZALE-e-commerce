@@ -17,6 +17,9 @@ const pg = new EmbeddedPostgres({
   password: "postgres",
   port,
   persistent: true,
+  // Without this, initdb on Windows inherits the OS code page (WIN1252) and
+  // rejects names in most non-Latin scripts.
+  initdbFlags: ["--encoding=UTF8", "--locale=C"],
 });
 
 const isNew = !existsSync(path.join(databaseDir, "PG_VERSION"));
@@ -27,7 +30,9 @@ const client = pg.getPgClient();
 await client.connect();
 for (const name of databases) {
   const { rowCount } = await client.query("SELECT 1 FROM pg_database WHERE datname = $1", [name]);
-  if (!rowCount) await client.query(`CREATE DATABASE "${name}"`);
+  if (!rowCount) await client.query(`CREATE DATABASE "${name}" WITH ENCODING 'UTF8' LC_COLLATE 'C' LC_CTYPE 'C' TEMPLATE template0`);
+  const { rows } = await client.query("SELECT pg_encoding_to_char(encoding) AS enc FROM pg_database WHERE datname = $1", [name]);
+  if (rows[0]?.enc !== "UTF8") console.warn(`WARNING: database "${name}" uses ${rows[0]?.enc}, not UTF8. Recreate it to store non-Latin text.`);
 }
 await client.end();
 
