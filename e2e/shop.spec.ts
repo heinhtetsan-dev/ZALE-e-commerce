@@ -98,7 +98,7 @@ test('protected pages redirect to login and profile can be updated', async ({ pa
 
   if (isMobile) await page.getByRole('button', { name: 'Open menu' }).click()
   await page.getByRole('button', { name: 'Log out' }).last().click()
-  await expect(page.getByRole('link', { name: 'Log in' })).toBeVisible()
+  await expect(page.getByRole('banner').getByRole('link', { name: 'Log in' })).toBeVisible()
 })
 
 test('layout is usable on narrow screens without horizontal scrolling', async ({ page }) => {

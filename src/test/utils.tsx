@@ -21,7 +21,7 @@ export function mockApi(overrides: Record<string, Handler | { status?: number; b
   }
   const calls: Array<{ method: string; path: string; body: unknown }> = []
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = new URL(String(input))
+    const url = new URL(String(input), 'http://localhost')
     const method = init?.method ?? 'GET'
     const path = url.pathname.replace(/^\/api\/v1/, '')
     const body = init?.body ? JSON.parse(String(init.body)) : undefined

@@ -9,9 +9,11 @@ It talks to the back-end REST API (separate repository) described in `../PROJECT
 
 ```bash
 npm install
-cp .env.example .env     # VITE_API_URL defaults to http://localhost:4000/api/v1
+cp .env.example .env     # VITE_API_URL=/api/v1, proxied by Vite to http://localhost:4000
 npm run dev              # http://localhost:5173
 ```
+
+In development the browser only talks to the Vite server, which forwards `/api` to the back-end. So the site works whether you open it at `localhost`, `127.0.0.1` or your LAN IP (`npm run dev -- --host` to try it from a phone on the same Wi-Fi). For a production build, set `VITE_API_URL` to the API's public URL.
 
 The back-end must be running and seeded (see its README). Demo accounts: `customer@shoeshop.test` / `Customer123!` and `admin@shoeshop.test` / `Admin123!`.
 

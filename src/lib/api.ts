@@ -1,6 +1,6 @@
 import type { StockShortage } from './types'
 
-export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:4000/api/v1'
+export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1'
 
 const TOKEN_KEY = 'shoeshop.token'
 

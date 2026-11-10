@@ -12,6 +12,7 @@ test('wishlist: save from the detail page, view, and remove', async ({ page }) =
   await loginAsCustomer(page)
   await page.goto('/?q=samba')
   await page.locator('article a').first().click()
+  await expect(page).toHaveURL(/\/products\//)
   const name = (await page.getByRole('heading', { level: 1 }).textContent())!.trim()
 
   const heart = page.getByRole('main').getByRole('button', { name: /wishlist/ }).first()
@@ -31,6 +32,7 @@ test('reviews: write, see the rating update, edit and delete', async ({ page }) 
   await loginAsCustomer(page)
   await page.goto('/?q=gazelle')
   await page.locator('article a').first().click()
+  await expect(page).toHaveURL(/\/products\//)
   const reviews = page.locator('#reviews')
 
   // Start clean if a previous run left a review behind.

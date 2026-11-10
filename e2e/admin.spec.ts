@@ -14,7 +14,7 @@ async function login(page: Page, who: { email: string; password: string }) {
 async function logout(page: Page, isMobile: boolean) {
   if (isMobile) await page.getByRole('button', { name: 'Open menu' }).click()
   await page.getByRole('button', { name: 'Log out' }).last().click()
-  await expect(page.getByRole('link', { name: 'Log in' })).toBeVisible()
+  await expect(page.getByRole('banner').getByRole('link', { name: 'Log in' })).toBeVisible()
 }
 
 test('customers cannot open admin pages', async ({ page }) => {
