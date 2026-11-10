@@ -28,7 +28,7 @@ const schema = z
     S3_ACCESS_KEY_ID: optional,
     S3_SECRET_ACCESS_KEY: optional,
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(15 * 60 * 1000),
-    RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
+    RATE_LIMIT_MAX: z.coerce.number().int().positive().default(1000),
     AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
     ORDER_PAYMENT_TIMEOUT_MINUTES: z.coerce.number().int().positive().default(30),
     ORDER_SWEEP_INTERVAL_SECONDS: z.coerce.number().int().nonnegative().default(60),
