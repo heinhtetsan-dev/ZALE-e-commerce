@@ -22,12 +22,3 @@ export const addressSchema = z.object({
 })
 
 export type AddressInput = z.input<typeof addressSchema>
-
-export const fieldErrorsOf = (error: z.ZodError) => {
-  const out: Record<string, string> = {}
-  for (const issue of error.issues) {
-    const key = issue.path.join('.')
-    if (!out[key]) out[key] = issue.message
-  }
-  return out
-}
