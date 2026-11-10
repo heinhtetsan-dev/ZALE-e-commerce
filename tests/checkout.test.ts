@@ -150,7 +150,9 @@ describe("orders after checkout", () => {
     const { body } = await api().post("/api/v1/orders").set(auth(token)).send({ shippingAddress: address });
     const paid = await api().post(`/api/v1/orders/${body.order.id}/pay/mock`).set(auth(token));
     expect(paid.body.paymentStatus).toBe("PAID");
-    expect(paid.body.paidAt).toBeTruthy();
+    // Guards against session time-zone drift between raw SQL now() and Prisma.
+    expect(Math.abs(new Date(paid.body.paidAt).getTime() - Date.now())).toBeLessThan(60_000);
+    expect(Math.abs(new Date(paid.body.createdAt).getTime() - Date.now())).toBeLessThan(60_000);
     expect((await api().post(`/api/v1/orders/${body.order.id}/pay/mock`).set(auth(token))).status).toBe(409);
     expect((await api().post(`/api/v1/orders/${body.order.id}/cancel`).set(auth(token))).status).toBe(409);
   });
