@@ -136,6 +136,7 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 ### Orders (customer)
 - `POST /orders` `{ shippingAddress: { fullName, line1, line2?, city, postalCode, country, phone? } }` → 201 `{ order, payment: { mode, clientSecret } }` | 409 `OUT_OF_STOCK` | 400 empty cart
 - `GET /orders?page&pageSize`, `GET /orders/:id`
+- `POST /orders/:id/payment` → `{ mode, clientSecret }` — (re)obtain the payment session for a `PENDING` + `UNPAID` order (e.g. if the provider call failed during checkout or the customer left the payment page)
 - `POST /orders/:id/cancel` (only `PENDING` + `UNPAID`)
 - `POST /orders/:id/pay/mock` (mock mode only)
 
@@ -198,3 +199,4 @@ Local development uses `embedded-postgres` (real PostgreSQL binaries via npm, `n
 
 ## 9. Changelog
 - v1.0 — initial specification.
+- v1.1 — added `POST /orders/:id/payment`; checkout `payment` may be `null` if the provider is unreachable (stock stays reserved until paid, cancelled or expired). Cart/order endpoints are available to any authenticated role; `/admin/*` requires `ADMIN`.
