@@ -12,11 +12,13 @@ npm install
 cp .env.example .env          # then set JWT_SECRET to a random 32+ char string
 npm run db:start              # local PostgreSQL on :5433 (keep running in its own terminal)
 npm run db:deploy             # apply migrations
-npm run db:seed               # brands, categories, 30 shoes, demo accounts
+npm run db:seed               # 40 real models (men's / women's / unisex), demo accounts
 npm run dev                   # http://localhost:4000/api/v1
 ```
 
 `db:start` runs real PostgreSQL binaries from the `embedded-postgres` package, so no system install is needed. To use your own server, point `DATABASE_URL` / `TEST_DATABASE_URL` at it (PostgreSQL 14+) and skip `db:start`.
+
+The demo catalog (`prisma/catalog.ts`) lists real models and colorways at typical retail prices, for educational use. Product photos are freely licensed images from Wikimedia Commons (`prisma/catalog-images.ts`). Each one keeps the photographer credit and source link its license requires, and the shop shows them under the product image. Re-running the seed refreshes catalog text and images but never changes stock.
 
 Demo accounts (from the seed): `admin@shoeshop.test` / `Admin123!`, `customer@shoeshop.test` / `Customer123!`.
 
