@@ -24,7 +24,10 @@ This spec lives at the workspace root and is versioned in its own small Git repo
 ## 3. Functional requirements
 
 ### 3.1 Catalog
-- Product list with full-text-ish search (`q` matches name, description, brand name; case-insensitive).
+- **Men's and women's sections.** Every product has a gender: `MEN`, `WOMEN` or `UNISEX`. Shoppers browse Men, Women or All (header navigation and tabs on the listing). Unisex products appear under both. Size runs follow the audience (EU men's 39–47, women's 35.5–41, unisex 36–46). Switching audience clears the size filter.
+- **Colorways.** Each product is one colorway of a model, with its manufacturer colorway name (e.g. "White/Black-Infrared") and a base `color` used by the color filter. Products sharing a `styleGroup` are colorways of the same model. The detail page shows them as swatches (same audience plus unisex).
+- **Image attribution.** Product photos may be freely licensed (e.g. Wikimedia Commons). `imageCredit` and `imageSourceUrl` hold the attribution required by CC BY / BY-SA licenses and are shown under the product image.
+- Product list with full-text-ish search (`q` matches name, colorway, description, brand name; case-insensitive).
 - Filters: brand (multi), category (multi), color (multi), size (multi; product must have that size **in stock**), price range (min/max).
 - Sorting: `newest` (default), `price_asc`, `price_desc`, `rating`, `name`.
 - Pagination: `page` (1-based) and `pageSize` (default 12, max 48). Responses include `total` and `totalPages`.
@@ -89,7 +92,7 @@ Money is stored as integer cents (`Int`). IDs are UUIDs. All timestamps are `tim
 | `User` | email, passwordHash, name, role (`CUSTOMER`/`ADMIN`) | unique email |
 | `Brand` | name, slug | unique name, slug |
 | `Category` | name, slug | unique name, slug |
-| `Product` | slug, name, description, brandId, categoryId, color, priceCents, images[], isActive, ratingAvg, ratingCount | unique slug; indexes on brandId, categoryId, color, priceCents, createdAt, ratingAvg, isActive; trigram GIN index on name for search |
+| `Product` | slug, name, description, brandId, categoryId, color, colorway?, gender (`MEN`/`WOMEN`/`UNISEX`), styleGroup?, priceCents, images[], imageCredit?, imageSourceUrl?, isActive, ratingAvg, ratingCount | unique slug; indexes on brandId, categoryId, color, gender, styleGroup, priceCents, createdAt, ratingAvg, isActive; trigram GIN index on name for search |
 | `ProductVariant` | productId, size, stock | unique (productId, size); index (size, stock); **CHECK (stock >= 0)** |
 | `CartItem` | userId, variantId, quantity | unique (userId, variantId); CHECK quantity 1–10 |
 | `Order` | userId, status, paymentStatus, subtotalCents, shippingCents, totalCents, shipping address fields, stripePaymentIntentId, paidAt, shippedAt, deliveredAt, cancelledAt | index (userId, createdAt), (status, createdAt), (paymentStatus, createdAt); unique stripePaymentIntentId |
@@ -122,9 +125,9 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 - `POST /auth/change-password` `{ currentPassword, newPassword }` → 204
 
 ### Catalog (public)
-- `GET /products` — query: `q, brand, category, color, size` (comma-separated lists), `minPrice, maxPrice` (cents), `sort, page, pageSize`.
-- `GET /products/facets` → `{ brands, categories, colors, sizes, price: { min, max } }` (active products only)
-- `GET /products/:slug` → product with `variants[]` (`id, size, stock, stockStatus`)
+- `GET /products` — query: `gender` (`men` | `women`, each including unisex), `q, brand, category, color, size` (comma-separated lists), `minPrice, maxPrice` (cents), `sort, page, pageSize`. Items include `gender`, `colorway`, `styleGroup`.
+- `GET /products/facets?gender` → `{ brands, categories, colors, sizes, price: { min, max } }` (active products only, scoped to the audience when given)
+- `GET /products/:slug` → product with `variants[]` (`id, size, stock, stockStatus`), `colorways[]` (`slug, colorway, color, image, inStock`), `imageCredit`, `imageSourceUrl`
 - `GET /products/:productId/reviews?page&pageSize`
 
 ### Cart (customer)
@@ -182,8 +185,8 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 
 | Route | Page |
 |---|---|
-| `/` | Product list: search, filter sidebar (drawer on mobile), sort, pagination; filters in URL query string |
-| `/products/:slug` | Detail: gallery, size grid with stock status, add to cart, wishlist, reviews |
+| `/`, `/?gender=men`, `/?gender=women` | Product list: All / Men / Women tabs, search, filter sidebar (drawer on mobile), sort, pagination; filters in URL query string |
+| `/products/:slug` | Detail: gallery with photo credit, gender, colorway name and sibling colorways, size grid with stock status, add to cart, wishlist, reviews |
 | `/cart` | Cart lines, quantity, remove, subtotal, checkout button |
 | `/checkout` | Shipping form → place order (stock reservation) → payment (Stripe Payment Element or mock) |
 | `/orders/:id/confirmation` | Payment result / order confirmation |
@@ -201,10 +204,11 @@ Back-End `.env` (see `backend/.env.example`): `DATABASE_URL, PORT, NODE_ENV, JWT
 
 Front-End `.env` (see `frontend/.env.example`): `VITE_API_URL`. In development it is the relative path `/api/v1` and the Vite dev/preview server proxies `/api` to the API (`API_PROXY_TARGET`, default `http://localhost:4000`), so the browser makes same-origin calls whether the site is opened via `localhost`, `127.0.0.1` or a LAN IP. Production builds set the API's public URL, which must be listed in the API's `CORS_ORIGINS`.
 
-Local development uses `embedded-postgres` (real PostgreSQL binaries via npm, `npm run db:start` in `backend/`) when no PostgreSQL server is available; any PostgreSQL 14+ works via `DATABASE_URL`.
+Databases must use UTF-8 encoding so names in any script (Burmese, Chinese, accented Latin…) can be stored. Local development uses `embedded-postgres` (real PostgreSQL binaries via npm, `npm run db:start` in `backend/`) when no PostgreSQL server is available; any PostgreSQL 14+ works via `DATABASE_URL`.
 
 ## 9. Changelog
 - v1.0 — initial specification.
 - v1.1 — added `POST /orders/:id/payment`; checkout `payment` may be `null` if the provider is unreachable (stock stays reserved until paid, cancelled or expired). Cart/order endpoints are available to any authenticated role; `/admin/*` requires `ADMIN`.
 - v1.2 — timestamps are `timestamptz` with UTC sessions; login limiter counts failed attempts only; admin endpoint response details (`imageRefs`, `totalStock`, `customer`, order search `q`, summary shape, presign `key`). Front-end e2e tests (Playwright, desktop + mobile) added to §6 testing.
 - v1.3 — reviews list/`mine`/distribution and wishlist `ids` + pagination specified; payment intents are voided when an unpaid order is cancelled or expires, and payments arriving for cancelled orders are refunded (`paymentStatus=REFUNDED`); global rate limit default raised to 1000/15 min; route-level code splitting.
+- v1.4 — men's/women's/unisex catalog with gender filter and Men/Women navigation; real colorway names and colorway groups; image attribution fields; demo catalog of 40 real models from 12 brands with freely licensed Wikimedia Commons photos; UTF-8 database requirement.
