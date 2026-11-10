@@ -1,0 +1,83 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render } from '@testing-library/react'
+import type { ReactNode } from 'react'
+import { createMemoryRouter, RouterProvider } from 'react-router'
+import { vi } from 'vitest'
+import { AuthProvider } from '../auth/AuthContext'
+import { guestCart } from '../cart/guestCart'
+import type { ProductDetail, User } from '../lib/types'
+
+type Handler = (req: { method: string; url: URL; body: unknown }) => { status?: number; body?: unknown } | undefined
+
+/** Routes fetch calls to handlers keyed by "METHOD /path" (path relative to /api/v1). */
+export function mockApi(handlers: Record<string, Handler | { status?: number; body?: unknown }>) {
+  const calls: Array<{ method: string; path: string; body: unknown }> = []
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = new URL(String(input))
+    const method = init?.method ?? 'GET'
+    const path = url.pathname.replace(/^\/api\/v1/, '')
+    const body = init?.body ? JSON.parse(String(init.body)) : undefined
+    calls.push({ method, path, body })
+    const entry = handlers[`${method} ${path}`]
+    const result = typeof entry === 'function' ? entry({ method, url, body }) : entry
+    if (!result) return new Response(JSON.stringify({ error: { code: 'NOT_FOUND', message: `No mock for ${method} ${path}` } }), { status: 404 })
+    return new Response(result.status === 204 ? null : JSON.stringify(result.body ?? {}), { status: result.status ?? 200, headers: { 'Content-Type': 'application/json' } })
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  return { calls, fetchMock }
+}
+
+export function renderRoute(element: ReactNode, { path = '/', route = '/', extraRoutes = [] }: { path?: string; route?: string; extraRoutes?: Array<{ path: string; element: ReactNode }> } = {}) {
+  guestCart.reset()
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  const router = createMemoryRouter(
+    [
+      { path, element },
+      ...extraRoutes,
+      { path: '*', element: <p>Other page</p> },
+    ],
+    { initialEntries: [route] },
+  )
+  return {
+    router,
+    queryClient,
+    ...render(
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
+      </QueryClientProvider>,
+    ),
+  }
+}
+
+export const customer: User = { id: 'u1', email: 'c@test.dev', name: 'Casey', role: 'CUSTOMER', createdAt: '2026-01-01T00:00:00Z' }
+
+export const loginAs = (user: User = customer) => {
+  localStorage.setItem('shoeshop.token', 'test-token')
+  return { 'GET /auth/me': { body: { user } } }
+}
+
+export const sampleProduct: ProductDetail = {
+  id: 'p1',
+  slug: 'nike-air',
+  name: 'Nike Air',
+  color: 'Black',
+  priceCents: 12000,
+  image: null,
+  images: [],
+  brand: { id: 'b1', name: 'Nike', slug: 'nike' },
+  category: { id: 'c1', name: 'Running', slug: 'running' },
+  ratingAvg: 0,
+  ratingCount: 0,
+  availableSizes: [42, 43],
+  inStock: true,
+  isActive: true,
+  createdAt: '2026-01-01T00:00:00Z',
+  description: 'A great shoe',
+  variants: [
+    { id: 'v41', size: 41, stock: 0, stockStatus: 'out_of_stock' },
+    { id: 'v42', size: 42, stock: 2, stockStatus: 'low_stock' },
+    { id: 'v43', size: 43, stock: 9, stockStatus: 'in_stock' },
+  ],
+}
