@@ -56,6 +56,7 @@ This spec lives at the workspace root and is versioned in its own small Git repo
 ### 3.4 Payments (Stripe, test mode)
 - `POST /orders` returns a `clientSecret`; the front-end confirms the card with Stripe Elements (Payment Element).
 - The Stripe webhook (`payment_intent.succeeded`) marks the order `PAID`. `payment_intent.payment_failed` keeps it `UNPAID` (customer may retry with the same intent). `GET /orders/:id` also reconciles with Stripe when the order is still unpaid, so the confirmation page works even without a webhook in local dev.
+- When an unpaid order is cancelled or expires, its PaymentIntent is cancelled. A payment that still succeeds for a cancelled order is refunded automatically and the order's payment status becomes `REFUNDED`.
 - Unpaid orders older than `ORDER_PAYMENT_TIMEOUT_MINUTES` (default 30) are cancelled and their stock restored by an idempotent sweep (conditional `UPDATE … WHERE status='PENDING' AND "paymentStatus"='UNPAID'`), safe to run from many instances. Customers may also cancel their own unpaid pending orders, which restores stock.
 - `PAYMENTS_MODE=mock` (local dev / tests without Stripe keys): no Stripe call; the client calls `POST /orders/:id/pay/mock` which marks the order paid. Mock mode is refused when `NODE_ENV=production`.
 
@@ -145,11 +146,15 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 - `POST /payments/webhook` — Stripe webhook (raw body, signature verified)
 
 ### Reviews (customer)
-- `POST /products/:productId/reviews` `{ rating, title?, comment? }`
-- `PATCH /reviews/:id`, `DELETE /reviews/:id`
+- `GET /products/:productId/reviews?page&pageSize` (public; default page size 5) → page of `{ id, rating, title, comment, createdAt, verifiedPurchase, author: { id, name } }` plus `distribution: { "1": n, …, "5": n }`. Author names are shortened ("Ada L.").
+- `GET /products/:productId/reviews/mine` → `{ review | null }`
+- `POST /products/:productId/reviews` `{ rating, title?, comment? }` → 201 | 409 if already reviewed
+- `PATCH /reviews/:id` (author), `DELETE /reviews/:id` (author or admin)
 
 ### Wishlist (customer)
-- `GET /wishlist`, `POST /wishlist` `{ productId }`, `DELETE /wishlist/:productId`
+- `GET /wishlist?page&pageSize` → page of `{ addedAt, product }` (product card shape)
+- `GET /wishlist/ids` → `{ productIds }` (for heart toggles)
+- `POST /wishlist` `{ productId }` (idempotent, 201), `DELETE /wishlist/:productId` (204)
 
 ### Admin (role `ADMIN`)
 - `GET /admin/products?q&page&pageSize&includeInactive` (items include `totalStock`), `GET /admin/products/:id` (includes `imageRefs` — the stored keys/URLs — plus `brandId`, `categoryId`)
@@ -166,8 +171,9 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 - **Stateless API**: JWT auth, no server sessions; any instance can serve any request. Background sweep is idempotent.
 - **Pagination** on every list endpoint, with enforced maximum page size.
 - **Indexes** on all filtered/sorted columns (see §4).
+- **Front-end bundle**: admin pages and the Stripe payment form are lazy-loaded route chunks; Stripe.js loads only on the payment page in Stripe mode.
 - **Images** are absolute URLs on cloud storage/CDN (`CDN_BASE_URL`); the API never serves image bytes.
-- **Rate limiting**: global limiter (default 300 req / 15 min / IP; health checks and the Stripe webhook exempt) and a strict limiter on auth endpoints (default 20 / 15 min / IP). For login only **failed** attempts count (brute-force protection without locking out legitimate users); registration and password change count every request. The in-memory store is per instance; a shared store (e.g. Redis) should be configured when running multiple instances.
+- **Rate limiting**: global limiter (default 1000 req / 15 min / IP, sized for shoppers sharing a carrier/office NAT; health checks and the Stripe webhook exempt) and a strict limiter on auth endpoints (default 20 / 15 min / IP). For login only **failed** attempts count (brute-force protection without locking out legitimate users); registration and password change count every request. The in-memory store is per instance; a shared store (e.g. Redis) should be configured when running multiple instances.
 - **Security**: bcrypt (cost 12) password hashes, Helmet, CORS allow-list (`CORS_ORIGINS`), Zod validation on every input, request body limit 100kb, JWT secret ≥ 32 chars required.
 - **Validation**: Zod on the back-end for every body/query/param; Zod on front-end forms.
 - **Testing**: back-end integration tests (Vitest + Supertest) against a real PostgreSQL, including a concurrency test for the last pair; front-end type-check, lint, unit tests (Vitest + Testing Library), production build, and Playwright end-to-end tests against the real API on desktop and mobile viewports.
@@ -201,3 +207,4 @@ Local development uses `embedded-postgres` (real PostgreSQL binaries via npm, `n
 - v1.0 — initial specification.
 - v1.1 — added `POST /orders/:id/payment`; checkout `payment` may be `null` if the provider is unreachable (stock stays reserved until paid, cancelled or expired). Cart/order endpoints are available to any authenticated role; `/admin/*` requires `ADMIN`.
 - v1.2 — timestamps are `timestamptz` with UTC sessions; login limiter counts failed attempts only; admin endpoint response details (`imageRefs`, `totalStock`, `customer`, order search `q`, summary shape, presign `key`). Front-end e2e tests (Playwright, desktop + mobile) added to §6 testing.
+- v1.3 — reviews list/`mine`/distribution and wishlist `ids` + pagination specified; payment intents are voided when an unpaid order is cancelled or expires, and payments arriving for cancelled orders are refunded (`paymentStatus=REFUNDED`); global rate limit default raised to 1000/15 min; route-level code splitting.
