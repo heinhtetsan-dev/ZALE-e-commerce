@@ -10,7 +10,15 @@ import type { ProductDetail, User } from '../lib/types'
 type Handler = (req: { method: string; url: URL; body: unknown }) => { status?: number; body?: unknown } | undefined
 
 /** Routes fetch calls to handlers keyed by "METHOD /path" (path relative to /api/v1). */
-export function mockApi(handlers: Record<string, Handler | { status?: number; body?: unknown }>) {
+const emptyReviews = { items: [], page: 1, pageSize: 5, total: 0, totalPages: 1, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }
+
+export function mockApi(overrides: Record<string, Handler | { status?: number; body?: unknown }>) {
+  const handlers: Record<string, Handler | { status?: number; body?: unknown }> = {
+    'GET /products/p1/reviews': { body: emptyReviews },
+    'GET /products/p1/reviews/mine': { body: { review: null } },
+    'GET /wishlist/ids': { body: { productIds: [] } },
+    ...overrides,
+  }
   const calls: Array<{ method: string; path: string; body: unknown }> = []
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input))

@@ -1,32 +1,53 @@
-# React + TypeScript + Vite
+# Shoe Shop — Front-End
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Responsive web storefront and admin back office for the Stride shoe shop. It is built mobile-first, so it works in phone browsers as well as on desktop.
 
-Currently, two official plugins are available:
+**Stack:** React 19, Vite, TypeScript, React Router, TanStack Query, Tailwind CSS 4, Zod, Stripe Elements.
+It talks to the back-end REST API (separate repository) described in `../PROJECT_SPEC.md`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Quick start
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+cp .env.example .env     # VITE_API_URL defaults to http://localhost:4000/api/v1
+npm run dev              # http://localhost:5173
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The back-end must be running and seeded (see its README). Demo accounts: `customer@shoeshop.test` / `Customer123!` and `admin@shoeshop.test` / `Admin123!`.
+
+## Scripts
+
+| Script | Purpose |
+|---|---|
+| `dev` / `build` / `preview` | Vite dev server, production build, preview the build |
+| `typecheck` | `tsc -b` |
+| `lint` | oxlint |
+| `test` | Unit and component tests (Vitest + Testing Library, mocked API) |
+| `test:e2e` | Playwright end-to-end tests on desktop and Pixel 7 viewports, against the real API (needs the back-end running and seeded) |
+
+Run `npx playwright install chromium` once before the first `test:e2e`.
+
+## Structure
+
+```
+src/
+  main.tsx, router.tsx    providers and routes (admin and payment pages are lazy-loaded)
+  lib/                    API client, types, formatting, form helpers
+  auth/                   auth context (JWT in localStorage), Zod form schemas
+  cart/                   unified cart: guest cart in localStorage, server cart when logged in
+  catalog/                URL-driven filters and the filter panel
+  checkout/               address schema, Stripe Payment Element
+  wishlist/               optimistic wishlist hook
+  components/             shared UI (layout, cards, pagination, reviews, notices)
+  pages/                  customer pages
+  admin/                  dashboard, product editor with per-size stock, orders
+e2e/                      Playwright specs
+```
+
+## Behaviour notes
+
+- **Filters, sorting and pagination** live in the URL, so results are shareable and survive refresh and the back button.
+- **Size is required** to add to cart. Sold-out sizes are disabled, and low stock shows "Only N left".
+- **The cart does not reserve stock.** Stock is reserved when the order is placed. If a size sells out first, checkout shows which item ran out and offers the other in-stock sizes as one-tap swaps.
+- **Guest carts** are merged into the account cart on login or registration.
+- **Payments:** in Stripe test mode the payment page renders the Stripe Payment Element (card `4242 4242 4242 4242`). In mock mode it shows a test "Pay" button.
