@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { conflict } from "../../lib/errors.js";
+import { logger } from "../../lib/logger.js";
 import { authenticate, userId } from "../../middleware/auth.js";
-import { createPaymentSession, payMock } from "../payments/payment.service.js";
+import { createPaymentSession, payMock, reconcileOrderPayment, voidPaymentIntent } from "../payments/payment.service.js";
 import { checkoutBody, orderIdParam, orderListQuery } from "./order.schemas.js";
 import * as orders from "./order.service.js";
 
@@ -24,6 +25,7 @@ orderRouter.get("/", async (req, res) => {
 
 orderRouter.get("/:id", async (req, res) => {
   const { id } = orderIdParam.parse(req.params);
+  await reconcileOrderPayment(await orders.getOrderRecord(id, userId(req)));
   res.json(await orders.getOrder(id, userId(req)));
 });
 
@@ -36,7 +38,9 @@ orderRouter.post("/:id/payment", async (req, res) => {
 
 orderRouter.post("/:id/cancel", async (req, res) => {
   const { id } = orderIdParam.parse(req.params);
-  res.json(await orders.cancelOrder(userId(req), id));
+  const order = await orders.cancelOrder(userId(req), id);
+  await voidPaymentIntent(id).catch((err) => logger.warn({ err, orderId: id }, "Could not cancel PaymentIntent"));
+  res.json(order);
 });
 
 orderRouter.post("/:id/pay/mock", async (req, res) => {

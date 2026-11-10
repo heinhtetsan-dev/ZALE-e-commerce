@@ -11,8 +11,10 @@ import { adminRouter } from "./modules/admin/admin.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { cartRouter } from "./modules/cart/cart.routes.js";
 import { orderRouter } from "./modules/orders/order.routes.js";
-import { paymentConfig } from "./modules/payments/payment.service.js";
+import { paymentRouter, stripeWebhookRouter } from "./modules/payments/payment.routes.js";
 import { productRouter } from "./modules/products/product.routes.js";
+import { productReviewRouter, reviewRouter } from "./modules/reviews/review.routes.js";
+import { wishlistRouter } from "./modules/wishlist/wishlist.routes.js";
 
 export function createApp() {
   const app = express();
@@ -33,6 +35,7 @@ export function createApp() {
 
   const api = Router();
   api.use(globalLimiter);
+  api.use("/payments/webhook", stripeWebhookRouter);
   api.use(express.json({ limit: "100kb" }));
 
   api.get("/health", (_req, res) => {
@@ -44,12 +47,13 @@ export function createApp() {
   });
 
   api.use("/auth", authRouter);
+  api.use("/products/:productId/reviews", productReviewRouter);
   api.use("/products", productRouter);
+  api.use("/reviews", reviewRouter);
+  api.use("/wishlist", wishlistRouter);
   api.use("/cart", cartRouter);
   api.use("/orders", orderRouter);
-  api.get("/payments/config", (_req, res) => {
-    res.json(paymentConfig());
-  });
+  api.use("/payments", paymentRouter);
   api.use("/admin", adminRouter);
 
   app.use("/api/v1", api);

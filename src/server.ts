@@ -3,7 +3,7 @@ import { env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
 import { prisma } from "./lib/prisma.js";
 import { expireUnpaidOrders } from "./modules/orders/order.service.js";
-import { onOrderExpired } from "./modules/payments/payment.service.js";
+import { voidPaymentIntent } from "./modules/payments/payment.service.js";
 
 const app = createApp();
 const server = app.listen(env.PORT, () => {
@@ -15,7 +15,7 @@ const server = app.listen(env.PORT, () => {
 const sweep =
   env.ORDER_SWEEP_INTERVAL_SECONDS > 0
     ? setInterval(() => {
-        expireUnpaidOrders(undefined, onOrderExpired).catch((err) => logger.error({ err }, "Order sweep failed"));
+        expireUnpaidOrders(undefined, voidPaymentIntent).catch((err) => logger.error({ err }, "Order sweep failed"));
       }, env.ORDER_SWEEP_INTERVAL_SECONDS * 1000)
     : undefined;
 
