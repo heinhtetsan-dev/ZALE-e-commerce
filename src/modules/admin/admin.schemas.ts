@@ -22,8 +22,19 @@ export const productBody = z.object({
   brandId: z.uuid(),
   categoryId: z.uuid(),
   color: z.string().trim().min(1).max(30),
+  colorway: z.string().trim().max(80).nullish().transform((v) => v || null),
+  gender: z.enum(["MEN", "WOMEN", "UNISEX"]).default("UNISEX"),
+  styleGroup: z
+    .string()
+    .trim()
+    .max(80)
+    .regex(/^([a-z0-9]+(?:-[a-z0-9]+)*)?$/, "Use lowercase letters, numbers and hyphens")
+    .nullish()
+    .transform((v) => v || null),
   priceCents: z.number().int().min(0).max(10_000_00),
   images: z.array(imageRef).max(8).default([]),
+  imageCredit: z.string().trim().max(500).nullish().transform((v) => v || null),
+  imageSourceUrl: z.url({ protocol: /^https$/ }).max(500).nullish().or(z.literal("").transform(() => null)),
   isActive: z.boolean().default(true),
 });
 

@@ -35,6 +35,9 @@ export const serializeProductCard = (p: ProductWithCard) => {
     slug: p.slug,
     name: p.name,
     color: p.color,
+    colorway: p.colorway,
+    gender: p.gender,
+    styleGroup: p.styleGroup,
     priceCents: p.priceCents,
     image: p.images[0] ? imageUrl(p.images[0]) : null,
     brand: p.brand,
@@ -48,9 +51,20 @@ export const serializeProductCard = (p: ProductWithCard) => {
   };
 };
 
-export const serializeProductDetail = (p: ProductWithCard) => ({
+export interface ColorwayLink {
+  slug: string;
+  colorway: string | null;
+  color: string;
+  image: string | null;
+  inStock: boolean;
+}
+
+export const serializeProductDetail = (p: ProductWithCard, colorways: ColorwayLink[] = []) => ({
   ...serializeProductCard(p),
   description: p.description,
   images: p.images.map(imageUrl),
+  imageCredit: p.imageCredit,
+  imageSourceUrl: p.imageSourceUrl,
   variants: p.variants.map(serializeVariant),
+  colorways,
 });

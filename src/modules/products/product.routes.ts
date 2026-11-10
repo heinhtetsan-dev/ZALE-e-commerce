@@ -1,5 +1,5 @@
 import { Router, type Response } from "express";
-import { productListQuery, slugParam } from "./product.schemas.js";
+import { facetsQuery, productListQuery, slugParam } from "./product.schemas.js";
 import { getFacets, getProductBySlug, listProducts } from "./product.service.js";
 
 export const productRouter = Router();
@@ -14,9 +14,9 @@ productRouter.get("/", async (req, res) => {
   res.json(await listProducts(query));
 });
 
-productRouter.get("/facets", async (_req, res) => {
+productRouter.get("/facets", async (req, res) => {
   cachePublic(res, 120);
-  res.json(await getFacets());
+  res.json(await getFacets(facetsQuery.parse(req.query).gender));
 });
 
 productRouter.get("/:slug", async (req, res) => {

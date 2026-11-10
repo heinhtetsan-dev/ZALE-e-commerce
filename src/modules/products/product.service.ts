@@ -1,9 +1,9 @@
-import type { Prisma } from "../../generated/prisma/client.js";
+import type { Gender, Prisma } from "../../generated/prisma/client.js";
 import { notFound } from "../../lib/errors.js";
 import { skipTake, toPage } from "../../lib/pagination.js";
 import { prisma } from "../../lib/prisma.js";
 import type { ProductListQuery } from "./product.schemas.js";
-import { productCardInclude, serializeProductCard, serializeProductDetail, toNumber } from "./product.serializer.js";
+import { imageUrl, productCardInclude, serializeProductCard, serializeProductDetail, toNumber } from "./product.serializer.js";
 
 const orderBy = (sort: ProductListQuery["sort"]): Prisma.ProductOrderByWithRelationInput[] => {
   // `id` as a tiebreaker keeps pagination stable when the primary key ties.
@@ -21,16 +21,20 @@ const orderBy = (sort: ProductListQuery["sort"]): Prisma.ProductOrderByWithRelat
   }
 };
 
-export const buildProductWhere = (q: Omit<ProductListQuery, "sort" | "page" | "pageSize">, includeInactive = false) => {
+export const audienceGenders = (g: "men" | "women"): Gender[] => (g === "men" ? ["MEN", "UNISEX"] : ["WOMEN", "UNISEX"]);
+
+export const buildProductWhere =(q: Omit<ProductListQuery, "sort" | "page" | "pageSize">, includeInactive = false) => {
   const where: Prisma.ProductWhereInput = {};
   if (!includeInactive) where.isActive = true;
   if (q.q) {
     where.OR = [
       { name: { contains: q.q, mode: "insensitive" } },
       { brand: { name: { contains: q.q, mode: "insensitive" } } },
+      { colorway: { contains: q.q, mode: "insensitive" } },
       { description: { contains: q.q, mode: "insensitive" } },
     ];
   }
+  if (q.gender) where.gender = { in: audienceGenders(q.gender) };
   if (q.brand.length) where.brand = { slug: { in: q.brand } };
   if (q.category.length) where.category = { slug: { in: q.category } };
   if (q.color.length) where.color = { in: q.color, mode: "insensitive" };
@@ -53,11 +57,23 @@ export async function listProducts(q: ProductListQuery) {
 export async function getProductBySlug(slug: string) {
   const product = await prisma.product.findFirst({ where: { slug, isActive: true }, include: productCardInclude });
   if (!product) throw notFound("Product");
-  return serializeProductDetail(product);
+  return serializeProductDetail(product, await colorwaysOf(product.styleGroup, product.gender));
 }
 
-export async function getFacets() {
-  const active = { isActive: true } as const;
+/** Active colorways of the same model for the same audience (current product included). */
+export async function colorwaysOf(styleGroup: string | null, gender: Gender) {
+  if (!styleGroup) return [];
+  const rows = await prisma.product.findMany({
+    where: { styleGroup, isActive: true, gender: { in: gender === "UNISEX" ? ["MEN", "WOMEN", "UNISEX"] : [gender, "UNISEX"] } },
+    select: { slug: true, colorway: true, color: true, images: true, variants: { where: { stock: { gt: 0 } }, select: { id: true }, take: 1 } },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    take: 12,
+  });
+  return rows.map((r) => ({ slug: r.slug, colorway: r.colorway, color: r.color, image: r.images[0] ? imageUrl(r.images[0]) : null, inStock: r.variants.length > 0 }));
+}
+
+export async function getFacets(gender?: "men" | "women") {
+  const active: Prisma.ProductWhereInput = { isActive: true, ...(gender ? { gender: { in: audienceGenders(gender) } } : {}) };
   const [brands, categories, colors, sizes, price] = await Promise.all([
     prisma.brand.findMany({
       where: { products: { some: active } },

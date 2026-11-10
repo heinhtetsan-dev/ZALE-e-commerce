@@ -12,9 +12,13 @@ const csvNumbers = (item: z.ZodNumber) =>
 
 export const productSorts = ["newest", "price_asc", "price_desc", "rating", "name"] as const;
 
+/** Shopper-facing audience: "men" and "women" both include unisex products. */
+export const genderParam = z.enum(["men", "women"]).optional();
+
 export const productListQuery = z
   .object({
     q: z.string().trim().max(100).optional(),
+    gender: genderParam,
     brand: csv(z.string().max(60)),
     category: csv(z.string().max(60)),
     color: csv(z.string().max(30)),
@@ -30,5 +34,7 @@ export const productListQuery = z
   });
 
 export type ProductListQuery = z.infer<typeof productListQuery>;
+
+export const facetsQuery = z.object({ gender: genderParam });
 
 export const slugParam = z.object({ slug: z.string().min(1).max(200) });

@@ -51,6 +51,9 @@ export async function createProduct(opts: {
   color?: string;
   priceCents?: number;
   isActive?: boolean;
+  gender?: "MEN" | "WOMEN" | "UNISEX";
+  colorway?: string;
+  styleGroup?: string;
   variants?: Array<{ size: number; stock: number }>;
 } = {}) {
   const brandName = opts.brand ?? "Acme";
@@ -71,6 +74,9 @@ export async function createProduct(opts: {
       color: opts.color ?? "Black",
       priceCents: opts.priceCents ?? 10000,
       isActive: opts.isActive ?? true,
+      gender: opts.gender ?? "UNISEX",
+      colorway: opts.colorway,
+      styleGroup: opts.styleGroup,
       images: ["products/test.jpg"],
       brandId: brand.id,
       categoryId: category.id,
