@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authenticate, userId } from "../../middleware/auth.js";
-import { authLimiter } from "../../middleware/rate-limit.js";
+import { authLimiter, loginLimiter } from "../../middleware/rate-limit.js";
 import { changePasswordBody, loginBody, registerBody, updateProfileBody } from "./auth.schemas.js";
 import * as auth from "./auth.service.js";
 
@@ -10,7 +10,7 @@ authRouter.post("/register", authLimiter, async (req, res) => {
   res.status(201).json(await auth.register(registerBody.parse(req.body)));
 });
 
-authRouter.post("/login", authLimiter, async (req, res) => {
+authRouter.post("/login", loginLimiter, async (req, res) => {
   res.json(await auth.login(loginBody.parse(req.body)));
 });
 

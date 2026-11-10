@@ -23,3 +23,13 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   handler,
 });
+
+/** Brute-force protection for login: only failed attempts count toward the limit. */
+export const loginLimiter = rateLimit({
+  windowMs: env.RATE_LIMIT_WINDOW_MS,
+  limit: env.AUTH_RATE_LIMIT_MAX,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  handler,
+});
