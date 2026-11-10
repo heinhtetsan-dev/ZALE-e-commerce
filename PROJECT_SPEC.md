@@ -199,7 +199,7 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 
 Back-End `.env` (see `backend/.env.example`): `DATABASE_URL, PORT, NODE_ENV, JWT_SECRET, JWT_EXPIRES_IN, CORS_ORIGINS, PAYMENTS_MODE, STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, CDN_BASE_URL, S3_*, RATE_LIMIT_*, ORDER_PAYMENT_TIMEOUT_MINUTES, SHIPPING_FLAT_CENTS, FREE_SHIPPING_THRESHOLD_CENTS`.
 
-Front-End `.env` (see `frontend/.env.example`): `VITE_API_URL`.
+Front-End `.env` (see `frontend/.env.example`): `VITE_API_URL`. In development it is the relative path `/api/v1` and the Vite dev/preview server proxies `/api` to the API (`API_PROXY_TARGET`, default `http://localhost:4000`), so the browser makes same-origin calls whether the site is opened via `localhost`, `127.0.0.1` or a LAN IP. Production builds set the API's public URL, which must be listed in the API's `CORS_ORIGINS`.
 
 Local development uses `embedded-postgres` (real PostgreSQL binaries via npm, `npm run db:start` in `backend/`) when no PostgreSQL server is available; any PostgreSQL 14+ works via `DATABASE_URL`.
 
