@@ -14,7 +14,6 @@ export type Audience = 'men' | 'women'
 export interface CatalogFilters {
   q: string
   gender?: Audience
-  brand: string[]
   category: string[]
   color: string[]
   size: string[]
@@ -39,7 +38,6 @@ export function parseFilters(params: URLSearchParams): CatalogFilters {
   return {
     q: params.get('q') ?? '',
     gender: gender === 'men' || gender === 'women' ? gender : undefined,
-    brand: list(params.get('brand')),
     category: list(params.get('category')),
     color: list(params.get('color')),
     size: list(params.get('size')),
@@ -54,7 +52,6 @@ export function filtersToParams(f: CatalogFilters): URLSearchParams {
   const p = new URLSearchParams()
   if (f.gender) p.set('gender', f.gender)
   if (f.q) p.set('q', f.q)
-  if (f.brand.length) p.set('brand', f.brand.join(','))
   if (f.category.length) p.set('category', f.category.join(','))
   if (f.color.length) p.set('color', f.color.join(','))
   if (f.size.length) p.set('size', f.size.join(','))
@@ -67,6 +64,6 @@ export function filtersToParams(f: CatalogFilters): URLSearchParams {
 
 /** Counts sidebar filters; the audience is a tab, not a filter chip. */
 export const activeFilterCount = (f: CatalogFilters) =>
-  f.brand.length + f.category.length + f.color.length + f.size.length + (f.minPrice !== undefined || f.maxPrice !== undefined ? 1 : 0)
+  f.category.length + f.color.length + f.size.length + (f.minPrice !== undefined || f.maxPrice !== undefined ? 1 : 0)
 
 export const toggle = <T,>(arr: T[], value: T) => (arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value])

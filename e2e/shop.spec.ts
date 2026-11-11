@@ -45,6 +45,24 @@ test('search, filter, sort and paginate the catalog', async ({ page, isMobile })
   await expect(page.getByRole('button', { name: '2', exact: true })).toHaveAttribute('aria-current', 'page')
 })
 
+test('filters keep the scroll position and there is no brand filter', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'Mobile filters live in a drawer; the page underneath does not scroll.')
+  await page.goto('/')
+  const filters = page.getByRole('complementary', { name: 'Filters' })
+  await expect(filters.getByText('Category', { exact: true })).toBeVisible()
+  await expect(filters.getByText('Brand', { exact: true })).toHaveCount(0)
+
+  const black = filters.getByRole('button', { name: 'Black', exact: true })
+  await black.scrollIntoViewIfNeeded()
+  const before = await page.evaluate(() => (globalThis as unknown as { scrollY: number }).scrollY)
+  expect(before).toBeGreaterThan(200)
+  await black.click()
+  await expect(page).toHaveURL(/color=Black/)
+  await expect(black).toHaveAttribute('aria-pressed', 'true')
+  const after = await page.evaluate(() => (globalThis as unknown as { scrollY: number }).scrollY)
+  expect(Math.abs(after - before)).toBeLessThan(50)
+})
+
 test('guest cart requires a size, then checks out after login and shows in order history', async ({ page }) => {
   await openFirstInStockProduct(page)
   const name = (await page.getByRole('heading', { level: 1 }).textContent())!.trim()

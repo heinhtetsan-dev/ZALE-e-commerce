@@ -39,7 +39,7 @@ function SearchForm({ initial, onSearch }: { initial: string; onSearch: (q: stri
         <input
           type="search"
           className="input border-transparent"
-          placeholder="Search by item, brand or color…"
+          placeholder="Search by item or color…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           maxLength={100}
@@ -71,7 +71,6 @@ export function ProductListPage() {
         query: {
           gender: filters.gender,
           q: filters.q || undefined,
-          brand: filters.brand,
           category: filters.category,
           color: filters.color,
           size: filters.size,
@@ -86,14 +85,15 @@ export function ProductListPage() {
   })
 
   // Any filter change resets to page 1; page changes keep the filters.
-  const update = (next: Partial<CatalogFilters>) => setParams(filtersToParams({ ...filters, page: 1, ...next }))
+  // Filter changes keep the scroll position; only paging moves back to the top.
+  const update = (next: Partial<CatalogFilters>) => setParams(filtersToParams({ ...filters, page: 1, ...next }), { preventScrollReset: true })
   const goToPage = (page: number) => {
-    setParams(filtersToParams({ ...filters, page }))
+    setParams(filtersToParams({ ...filters, page }), { preventScrollReset: true })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const activeCount = activeFilterCount(filters)
-  const clearAll = () => setParams(filtersToParams({ q: filters.q, gender: filters.gender, brand: [], category: [], color: [], size: [], sort: filters.sort, page: 1 }))
+  const clearAll = () => setParams(filtersToParams({ q: filters.q, gender: filters.gender, category: [], color: [], size: [], sort: filters.sort, page: 1 }), { preventScrollReset: true })
   // Men's and women's size runs differ, so a size filter doesn't carry over.
   const switchAudience = (gender?: Audience) => update({ gender, size: [] })
   const hero = HERO[filters.gender ?? 'all']
@@ -161,9 +161,9 @@ export function ProductListPage() {
 
           {activeCount > 0 && (
             <div className="mb-4 flex flex-wrap gap-2">
-              {[...filters.brand.map((v) => ['brand', v] as const), ...filters.category.map((v) => ['category', v] as const), ...filters.color.map((v) => ['color', v] as const)].map(([key, v]) => (
+              {[...filters.category.map((v) => ['category', v] as const), ...filters.color.map((v) => ['color', v] as const)].map(([key, v]) => (
                 <button key={`${key}-${v}`} type="button" className="rounded-full bg-stone-200 px-3 py-1 text-xs font-medium" onClick={() => update({ [key]: filters[key].filter((x) => x !== v) })}>
-                  {facets.data?.brands.find((b) => b.slug === v)?.name ?? facets.data?.categories.find((c) => c.slug === v)?.name ?? v} ✕
+                  {facets.data?.categories.find((c) => c.slug === v)?.name ?? v} ✕
                 </button>
               ))}
               {filters.size.map((s) => (

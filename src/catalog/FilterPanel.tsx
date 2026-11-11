@@ -87,13 +87,6 @@ export function FilterPanel({ facets, filters, onChange }: { facets: Facets; fil
           onToggle={(v) => onChange({ category: toggle(filters.category, v) })}
         />
       </Section>
-      <Section title="Brand">
-        <CheckList
-          options={facets.brands.map((b) => ({ value: b.slug, label: b.name, count: b.count }))}
-          selected={filters.brand}
-          onToggle={(v) => onChange({ brand: toggle(filters.brand, v) })}
-        />
-      </Section>
       <Section title="Size (in stock)">
         <div className="flex flex-wrap gap-2">
           {facets.sizes.map((s) => {
