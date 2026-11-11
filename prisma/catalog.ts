@@ -1,7 +1,7 @@
 /**
  * Demo fashion catalog for educational use. Branded items are real products
  * whose photos show that brand; generic items use the shop's own label
- * "Stride Essentials" so no brand is claimed that the photo doesn't show.
+ * "LUNE Essentials" so no brand is claimed that the photo doesn't show.
  * Prices are typical retail prices in USD cents. Photos come from Wikimedia
  * Commons (see catalog-images.ts) with the attribution their licenses require.
  */
@@ -21,7 +21,7 @@ export const sizeRuns: Record<SizeRun, string[]> = {
 };
 
 export const brands = [
-  "Stride Essentials",
+  "LUNE Essentials",
   "Levi's",
   "Polo Ralph Lauren",
   "Lacoste",
@@ -80,9 +80,13 @@ export const slugify = (s: string) =>
     .replace(/(^-|-$)/g, "");
 
 export const productSlug = (c: CatalogProduct) =>
-  slugify(`${c.brand} ${c.model} ${c.colorway} ${c.gender === "UNISEX" ? "" : c.gender === "MEN" ? "mens" : "womens"}`);
+  slugify(`${productName(c)} ${c.colorway} ${c.gender === "UNISEX" ? "" : c.gender === "MEN" ? "mens" : "womens"}`);
 
-const E = "Stride Essentials";
+export const HOUSE_BRAND = "LUNE Essentials";
+const E = HOUSE_BRAND;
+
+/** House-label items are named without the label ("Wool Blend Long Coat"); branded items keep it. */
+export const productName = (c: CatalogProduct) => (c.brand === HOUSE_BRAND ? c.model : `${c.brand} ${c.model}`);
 
 export const catalog: CatalogProduct[] = [
   // ------------------------------------------------------------------ men

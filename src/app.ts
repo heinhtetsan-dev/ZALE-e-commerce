@@ -14,6 +14,7 @@ import { orderRouter } from "./modules/orders/order.routes.js";
 import { paymentRouter, stripeWebhookRouter } from "./modules/payments/payment.routes.js";
 import { productRouter } from "./modules/products/product.routes.js";
 import { productReviewRouter, reviewRouter } from "./modules/reviews/review.routes.js";
+import { newsletterRouter } from "./modules/newsletter/newsletter.routes.js";
 import { wishlistRouter } from "./modules/wishlist/wishlist.routes.js";
 
 export function createApp() {
@@ -51,6 +52,7 @@ export function createApp() {
   api.use("/products", productRouter);
   api.use("/reviews", reviewRouter);
   api.use("/wishlist", wishlistRouter);
+  api.use("/newsletter", newsletterRouter);
   api.use("/cart", cartRouter);
   api.use("/orders", orderRouter);
   api.use("/payments", paymentRouter);

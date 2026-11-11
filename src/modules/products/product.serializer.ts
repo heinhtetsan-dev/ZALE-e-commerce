@@ -30,10 +30,16 @@ export const serializeVariant = (v: { id: string; size: string; stock: number })
   stockStatus: stockStatus(v.stock),
 });
 
-export const serializeProductCard = (p: ProductWithCard) => {
-  const availableSizes = bySize(p.variants)
-    .filter((v) => v.stock > 0)
-    .map((v) => v.size);
+/** Other colors of the same item, shown as dots on product cards. */
+export interface Swatch {
+  slug: string;
+  color: string;
+  colorway: string | null;
+}
+
+export const serializeProductCard = (p: ProductWithCard, swatches: Swatch[] = []) => {
+  const sorted = bySize(p.variants);
+  const availableSizes = sorted.filter((v) => v.stock > 0).map((v) => v.size);
   return {
     id: p.id,
     slug: p.slug,
@@ -49,6 +55,9 @@ export const serializeProductCard = (p: ProductWithCard) => {
     ratingAvg: Math.round(p.ratingAvg * 10) / 10,
     ratingCount: p.ratingCount,
     availableSizes,
+    // Lets cards offer "quick add" without loading the product page.
+    sizes: sorted.map((v) => ({ variantId: v.id, size: v.size, stock: v.stock })),
+    swatches,
     inStock: availableSizes.length > 0,
     isActive: p.isActive,
     createdAt: p.createdAt,

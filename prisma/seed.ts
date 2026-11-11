@@ -2,7 +2,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client.js";
-import { brands, catalog, categories, productSlug, sizeRuns, slugify } from "./catalog.js";
+import { brands, catalog, categories, productName, productSlug, sizeRuns, slugify } from "./catalog.js";
 import { commonsImages } from "./catalog-images.js";
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL!, options: "-c TimeZone=UTC" }) });
@@ -50,7 +50,7 @@ async function main() {
       return img;
     });
     const data = {
-      name: `${item.brand} ${item.model}`,
+      name: productName(item),
       description: item.description,
       brandId: brandIds.get(item.brand)!,
       categoryId: categoryIds.get(item.category)!,

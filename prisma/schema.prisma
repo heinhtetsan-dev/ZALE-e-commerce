@@ -206,3 +206,10 @@ model WishlistItem {
 
   @@unique([userId, productId])
 }
+
+/// Email sign-ups from the storefront newsletter form.
+model NewsletterSubscriber {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+}

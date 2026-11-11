@@ -52,7 +52,31 @@ export async function listProducts(q: ProductListQuery) {
     prisma.product.count({ where }),
     prisma.product.findMany({ where, orderBy: orderBy(q.sort), include: productCardInclude, ...skipTake(q.page, q.pageSize) }),
   ]);
-  return toPage(rows.map(serializeProductCard), total, q.page, q.pageSize);
+  const swatches = await swatchesFor(rows);
+  return toPage(
+    rows.map((p) => serializeProductCard(p, swatches(p))),
+    total,
+    q.page,
+    q.pageSize,
+  );
+}
+
+const sameAudience = (a: Gender, b: Gender) => a === "UNISEX" || b === "UNISEX" || a === b;
+
+/** One query for the whole page: other colors of each listed item (only when it has more than one). */
+async function swatchesFor(rows: Array<{ slug: string; styleGroup: string | null; gender: Gender }>) {
+  const groups = [...new Set(rows.map((r) => r.styleGroup).filter((g): g is string => !!g))];
+  const siblings = groups.length
+    ? await prisma.product.findMany({
+        where: { styleGroup: { in: groups }, isActive: true },
+        select: { slug: true, color: true, colorway: true, gender: true, styleGroup: true },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      })
+    : [];
+  return (p: { styleGroup: string | null; gender: Gender }) => {
+    const mine = siblings.filter((s) => s.styleGroup === p.styleGroup && sameAudience(s.gender, p.gender));
+    return mine.length > 1 ? mine.slice(0, 6).map(({ slug, color, colorway }) => ({ slug, color, colorway })) : [];
+  };
 }
 
 export async function getProductBySlug(slug: string) {
