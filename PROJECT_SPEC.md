@@ -1,4 +1,4 @@
-# Stride Fashion — Project Specification
+# LUNE — Project Specification
 
 Status: living document. Any intentional deviation in the implementation must be reflected here in the same change.
 
@@ -35,6 +35,14 @@ This spec lives at the workspace root and is versioned in its own small Git repo
 - Product detail: images, description, brand, category, color, price, average rating, size grid with per-size stock status:
   - `in_stock` (stock ≥ 5), `low_stock` (1–4, shows "Only N left"), `out_of_stock` (0, size disabled).
 - Only active products (`isActive = true`) are visible to non-admins.
+
+### 3.1a Storefront design (LUNE)
+- Brand: **LUNE**. Cream background, black ink, sand tones for image tiles; Cormorant Garamond (display) and Inter (text), self-hosted.
+- Header: announcement bar (free delivery threshold, returns), NEW IN / WOMEN / MEN / ACCESSORIES on the left, centered LUNE wordmark, search, account, wishlist and bag (count) on the right; a menu button on small screens.
+- Product cards: 3:4 image, wishlist heart, name, price, color dots linking to the item's other colors. **Quick add**: choose a size on the card (one-size items add directly).
+- Adding to the bag (product page or quick add) opens a **bag drawer** on the same page: lines with quantity controls, free-delivery progress, subtotal and checkout. The header bag button opens the same drawer; `/cart` remains as the full bag page.
+- Product page: image grid, gender · category eyebrow, serif title, price, round color swatches, size grid (sold-out sizes dashed and struck through), size guide dialog, ADD TO BAG, accordions for Description, Fabric & care and Delivery & returns.
+- Logging out from a protected page returns to the home page; an expired session still goes to the login page.
 
 ### 3.2 Cart
 - A size (variant) is **required** to add to cart.
@@ -128,6 +136,7 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 ### Catalog (public)
 - `GET /products` — query: `gender` (`men` | `women`, each including unisex), `q, brand, category, color, size` (comma-separated lists), `minPrice, maxPrice` (cents), `sort, page, pageSize`. Items include `gender`, `colorway`, `styleGroup`.
 - `GET /products/facets?gender` → `{ brands, categories, colors, sizes, price: { min, max } }` (active products only, scoped to the audience when given)
+- Product card items also include `sizes[]` (`variantId, size, stock`, in fit order) for quick add and `swatches[]` (`slug, color, colorway`) — the item's colors for the same audience, empty when there is only one.
 - `GET /products/:slug` → product with `variants[]` (`id, size, stock, stockStatus`), `colorways[]` (`slug, colorway, color, image, inStock`), `imageCredit`, `imageSourceUrl`
 - `GET /products/:productId/reviews?page&pageSize`
 
@@ -148,6 +157,9 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 ### Payments
 - `GET /payments/config` → `{ mode: "stripe" | "mock", publishableKey }`
 - `POST /payments/webhook` — Stripe webhook (raw body, signature verified)
+
+### Newsletter (public)
+- `POST /newsletter` `{ email }` → 201 `{ subscribed: true }` — idempotent; the response is identical for new and existing addresses. Rate-limited like auth endpoints.
 
 ### Reviews (customer)
 - `GET /products/:productId/reviews?page&pageSize` (public; default page size 5) → page of `{ id, rating, title, comment, createdAt, verifiedPurchase, author: { id, name } }` plus `distribution: { "1": n, …, "5": n }`. Author names are shortened ("Ada L.").
@@ -186,7 +198,9 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 
 | Route | Page |
 |---|---|
-| `/`, `/?gender=men`, `/?gender=women` | Product list: All / Men / Women tabs, search, filter sidebar (drawer on mobile), sort, pagination; filters in URL query string |
+| `/` | Home: hero, Women / Men / Accessories tiles, New arrivals, newsletter sign-up |
+| `/shop`, `/shop?gender=women`, `/shop?gender=men`, `/shop?category=accessories` | Product list: All / Men / Women tabs, search, filter sidebar (drawer on mobile), sort, pagination, quick add; filters in URL query string |
+| `/help/shipping`, `/help/returns`, `/help/size-guide`, `/help/contact` | Help pages (contact email from `VITE_CONTACT_EMAIL`) |
 | `/products/:slug` | Detail: gallery with photo credit, gender and category, color name and sibling colors, size picker with stock status, add to cart, wishlist, reviews |
 | `/cart` | Cart lines, quantity, remove, subtotal, checkout button |
 | `/checkout` | Shipping form → place order (stock reservation) → payment (Stripe Payment Element or mock) |
@@ -215,3 +229,4 @@ Databases must use UTF-8 encoding so names in any script (Burmese, Chinese, acce
 - v1.4 — men's/women's/unisex catalog with gender filter and Men/Women navigation; real colorway names and colorway groups; image attribution fields; demo catalog of 40 real models from 12 brands with freely licensed Wikimedia Commons photos; UTF-8 database requirement.
 - v1.5 — catalog switched from shoes to men's and women's clothing and accessories: size labels instead of EU numeric sizes (migration converts existing values), clothing categories, 56-item demo catalog from 16 real brands plus the house label "Stride Essentials" for generic items; product photos must come from the Wikimedia thumbnail CDN (originals on upload.wikimedia.org are rate-limited); friendly route error page (e.g. stale bundles after a deploy) instead of the router's developer screen.
 - v1.6 — brand filter removed from the storefront (API still supports it); filter changes no longer reset the scroll position.
+- v1.7 — LUNE storefront redesign (home page, `/shop`, product page, header/footer, help pages), bag drawer and quick add, newsletter sign-up endpoint, `sizes`/`swatches` on product cards, house label renamed to "LUNE Essentials" with house items named without the label; whole-dollar prices shown without cents.
