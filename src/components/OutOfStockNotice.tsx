@@ -49,7 +49,7 @@ export function OutOfStockNotice({
             <p className="mt-1">
               No other sizes are in stock right now.{' '}
               <Link to="/" className="font-semibold underline">
-                Browse similar shoes
+                Browse similar items
               </Link>
             </p>
           )}

@@ -17,6 +17,17 @@ async function logout(page: Page, isMobile: boolean) {
   await expect(page.getByRole('banner').getByRole('link', { name: 'Log in' })).toBeVisible()
 }
 
+// Remove test products even if a test failed midway, so they never linger in the shop.
+// The API hides (rather than deletes) products that appear in orders.
+test.afterAll(async ({ request }) => {
+  const { token } = await (await request.post('/api/v1/auth/login', { data: ADMIN })).json()
+  const headers = { Authorization: `Bearer ${token}` }
+  const list = await (await request.get('/api/v1/admin/products?q=E2E%20Tee&pageSize=48', { headers })).json()
+  for (const p of list.items as Array<{ id: string; name: string; isActive: boolean }>) {
+    if (p.name.startsWith('E2E Tee') && p.isActive) await request.delete(`/api/v1/admin/products/${p.id}`, { headers })
+  }
+})
+
 test('customers cannot open admin pages', async ({ page }) => {
   await login(page, CUSTOMER)
   await page.goto('/admin')
@@ -25,7 +36,7 @@ test('customers cannot open admin pages', async ({ page }) => {
 })
 
 test('admin creates a product, stocks sizes, and fulfils an order', async ({ page, isMobile }) => {
-  const name = `E2E Runner ${Date.now()}`
+  const name = `E2E Tee ${Date.now()}`
 
   await login(page, ADMIN)
   await expect(page).toHaveURL(/\/admin$/)
@@ -36,34 +47,34 @@ test('admin creates a product, stocks sizes, and fulfils an order', async ({ pag
   await page.getByRole('navigation', { name: 'Admin' }).getByRole('link', { name: 'Products' }).click()
   await page.getByRole('link', { name: '+ New product' }).click()
   await page.getByLabel('Name', { exact: true }).fill(name)
-  await page.getByLabel('Brand').selectOption({ label: 'Asics' })
-  await page.getByLabel('Category').selectOption({ label: 'Running' })
+  await page.getByLabel('Brand').selectOption({ label: 'Stride Essentials' })
+  await page.getByLabel('Category').selectOption({ label: 'T-Shirts & Polos' })
   await page.getByLabel('Base color (for filters)').fill('Green')
-  await page.getByLabel('Colorway name').fill('Green Glow/White')
+  await page.getByLabel('Color name (as sold)').fill('Forest Green')
   await page.getByLabel('Gender').selectOption('MEN')
   await page.getByLabel('Price (USD)').fill('99.50')
   await page.getByLabel('Description').fill('Created by an end-to-end test.')
   await page.getByRole('button', { name: 'Create product' }).click()
   await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible()
 
-  // Stock per size: one pair of 44, two of 44.5
+  // Stock per size: one M, two L
   await page.getByRole('button', { name: '+ Add size' }).click()
-  await page.getByPlaceholder('Size').last().fill('44')
+  await page.getByPlaceholder('Size').last().fill('m')
   await page.getByPlaceholder('Stock').last().fill('1')
   await page.getByRole('button', { name: '+ Add size' }).click()
-  await page.getByPlaceholder('Size').last().fill('44.5')
+  await page.getByPlaceholder('Size').last().fill('L')
   await page.getByPlaceholder('Stock').last().fill('2')
   await page.getByRole('button', { name: 'Save stock' }).click()
   await expect(page.getByText('Stock updated.')).toBeVisible()
-  await expect(page.getByText('3 pairs total')).toBeVisible()
+  await expect(page.getByText('3 items in stock')).toBeVisible()
   await logout(page, isMobile)
 
-  // Customer buys the only pair of size 44
+  // Customer buys the only size M
   await login(page, CUSTOMER)
   await page.goto(`/?q=${encodeURIComponent(name)}`)
   await page.locator('article a').first().click()
   await expect(page.getByText('$99.50')).toBeVisible()
-  await page.getByRole('radio', { name: '44', exact: true }).click()
+  await page.getByRole('radio', { name: 'M', exact: true }).click()
   await expect(page.getByText('Only 1 left')).toBeVisible()
   await page.getByRole('button', { name: 'Add to cart' }).click()
   await expect(page.getByText(/Added .* to your cart/)).toBeVisible()
@@ -78,10 +89,10 @@ test('admin creates a product, stocks sizes, and fulfils an order', async ({ pag
   await expect(page.getByRole('heading', { name: 'Thank you for your order!' })).toBeVisible()
   const orderNumber = (await page.getByText(/^Order #/).first().textContent())!.match(/#([A-Z0-9]+)/)![1]!
 
-  // Size 44 is now sold out on the product page
+  // Size M is now sold out on the product page
   await page.goto(`/?q=${encodeURIComponent(name)}`)
   await page.locator('article a').first().click()
-  await expect(page.getByRole('radio', { name: '44', exact: true })).toBeDisabled()
+  await expect(page.getByRole('radio', { name: 'M', exact: true })).toBeDisabled()
   await logout(page, isMobile)
 
   // Admin ships and delivers
@@ -94,13 +105,13 @@ test('admin creates a product, stocks sizes, and fulfils an order', async ({ pag
   await page.goto('/admin/orders?status=DELIVERED')
   await expect(page.locator('li', { hasText: `#${orderNumber}` })).toBeVisible()
 
-  // Stock was decremented at checkout: size 44 now shows 0 in the admin editor
+  // Stock was decremented at checkout: size M now shows 0 in the admin editor
   await page.goto('/admin/products')
   await page.getByRole('searchbox', { name: 'Search products' }).fill(name)
   await page.getByRole('button', { name: 'Search', exact: true }).click()
   await page.getByRole('link', { name: new RegExp(name) }).click()
-  await expect(page.getByLabel('Stock for size 44', { exact: true })).toHaveValue('0')
-  await expect(page.getByText('2 pairs total')).toBeVisible()
+  await expect(page.getByLabel('Stock for size M', { exact: true })).toHaveValue('0')
+  await expect(page.getByText('2 items in stock')).toBeVisible()
 
   // Clean up: ordered products are hidden, not deleted
   await page.getByRole('button', { name: 'Delete…' }).click()

@@ -14,6 +14,9 @@ const apiProxy = {
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: { proxy: apiProxy },
+  // Lazy routes are only crawled when first opened; pre-bundle their deps so
+  // the dev server doesn't re-optimize mid-navigation and break the import.
+  optimizeDeps: { include: ['@stripe/stripe-js/pure', '@stripe/react-stripe-js'] },
   preview: { proxy: apiProxy },
   test: {
     environment: 'jsdom',

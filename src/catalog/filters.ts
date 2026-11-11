@@ -8,7 +8,7 @@ export const SORTS = [
 
 export type Sort = (typeof SORTS)[number]['value']
 
-/** Shopping audience. Unisex shoes appear under both. */
+/** Shopping audience. Unisex items appear under both. */
 export type Audience = 'men' | 'women'
 
 export interface CatalogFilters {
@@ -17,7 +17,7 @@ export interface CatalogFilters {
   brand: string[]
   category: string[]
   color: string[]
-  size: number[]
+  size: string[]
   minPrice?: number
   maxPrice?: number
   sort: Sort
@@ -42,7 +42,7 @@ export function parseFilters(params: URLSearchParams): CatalogFilters {
     brand: list(params.get('brand')),
     category: list(params.get('category')),
     color: list(params.get('color')),
-    size: list(params.get('size')).map(Number).filter((n) => Number.isFinite(n) && n > 0),
+    size: list(params.get('size')),
     minPrice: int(params.get('minPrice')),
     maxPrice: int(params.get('maxPrice')),
     sort: SORTS.some((s) => s.value === sort) ? (sort as Sort) : 'newest',

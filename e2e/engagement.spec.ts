@@ -10,7 +10,7 @@ async function loginAsCustomer(page: Page) {
 
 test('wishlist: save from the detail page, view, and remove', async ({ page }) => {
   await loginAsCustomer(page)
-  await page.goto('/?q=samba')
+  await page.goto('/?q=barbour%20wax')
   await page.locator('article a').first().click()
   await expect(page).toHaveURL(/\/products\//)
   const name = (await page.getByRole('heading', { level: 1 }).textContent())!.trim()
@@ -30,7 +30,7 @@ test('wishlist: save from the detail page, view, and remove', async ({ page }) =
 
 test('reviews: write, see the rating update, edit and delete', async ({ page }) => {
   await loginAsCustomer(page)
-  await page.goto('/?q=gazelle')
+  await page.goto('/?q=trucker')
   await page.locator('article a').first().click()
   await expect(page).toHaveURL(/\/products\//)
   const reviews = page.locator('#reviews')

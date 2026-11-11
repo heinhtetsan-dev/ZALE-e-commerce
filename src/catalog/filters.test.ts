@@ -3,13 +3,13 @@ import { activeFilterCount, filtersToParams, parseFilters, toggle } from './filt
 
 describe('catalog filters', () => {
   it('parses URL params with defaults and ignores garbage', () => {
-    const f = parseFilters(new URLSearchParams('brand=nike,adidas&size=42,abc,42.5&minPrice=-5&maxPrice=9000&sort=bogus&page=0'))
+    const f = parseFilters(new URLSearchParams('brand=nike,adidas&size=M,XL,32&minPrice=-5&maxPrice=9000&sort=bogus&page=0'))
     expect(f).toEqual({
       q: '',
       brand: ['nike', 'adidas'],
       category: [],
       color: [],
-      size: [42, 42.5],
+      size: ['M', 'XL', '32'],
       minPrice: undefined,
       maxPrice: 9000,
       sort: 'newest',

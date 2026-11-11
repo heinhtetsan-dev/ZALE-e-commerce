@@ -12,7 +12,7 @@ describe('productFormSchema', () => {
     color: 'Red',
     colorway: 'University Red/White',
     gender: 'MEN' as const,
-    styleGroup: 'shoe',
+    styleGroup: 'hoodie',
     price: '129.99',
     images: 'https://cdn.x/a.jpg\n\nproducts/b.jpg',
     imageCredit: '',
@@ -35,11 +35,12 @@ describe('productFormSchema', () => {
 })
 
 describe('variantsSchema', () => {
-  it('requires unique half sizes and non-negative integer stock', () => {
-    expect(variantsSchema.safeParse([{ size: 42.5, stock: 3 }]).success).toBe(true)
-    expect(variantsSchema.safeParse([{ size: 42.3, stock: 3 }]).success).toBe(false)
-    expect(variantsSchema.safeParse([{ size: 42, stock: -1 }]).success).toBe(false)
-    expect(variantsSchema.safeParse([{ size: 42, stock: 1 }, { size: 42, stock: 2 }]).success).toBe(false)
+  it('requires unique size labels and non-negative integer stock', () => {
+    expect(variantsSchema.safeParse([{ size: 'M', stock: 3 }, { size: '32', stock: 1 }, { size: 'One Size', stock: 2 }]).success).toBe(true)
+    expect(variantsSchema.safeParse([{ size: '', stock: 3 }]).success).toBe(false)
+    expect(variantsSchema.safeParse([{ size: 'M<script>', stock: 3 }]).success).toBe(false)
+    expect(variantsSchema.safeParse([{ size: 'M', stock: -1 }]).success).toBe(false)
+    expect(variantsSchema.safeParse([{ size: 'M', stock: 1 }, { size: 'm', stock: 2 }]).success).toBe(false)
   })
 })
 

@@ -41,7 +41,7 @@ export interface ProductCard {
   category: Ref
   ratingAvg: number
   ratingCount: number
-  availableSizes: number[]
+  availableSizes: string[]
   inStock: boolean
   isActive: boolean
   createdAt: string
@@ -49,7 +49,7 @@ export interface ProductCard {
 
 export interface Variant {
   id: string
-  size: number
+  size: string
   stock: number
   stockStatus: StockStatus
 }
@@ -75,7 +75,7 @@ export interface Facets {
   brands: Array<{ name: string; slug: string; count: number }>
   categories: Array<{ name: string; slug: string; count: number }>
   colors: Array<{ name: string; count: number }>
-  sizes: number[]
+  sizes: string[]
   price: { min: number; max: number }
 }
 
@@ -84,7 +84,7 @@ export type CartIssue = 'unavailable' | 'out_of_stock' | 'insufficient_stock' | 
 export interface ServerCartItem {
   id: string
   quantity: number
-  variant: { id: string; size: number; stock: number; stockStatus: StockStatus }
+  variant: { id: string; size: string; stock: number; stockStatus: StockStatus }
   product: { id: string; slug: string; name: string; brand: string; color: string; priceCents: number; image: string | null; isActive: boolean }
   lineTotalCents: number
   issue: CartIssue
@@ -113,7 +113,7 @@ export interface OrderItem {
   productName: string
   productSlug: string
   image: string | null
-  size: number
+  size: string
   unitPriceCents: number
   quantity: number
   lineTotalCents: number
@@ -148,10 +148,10 @@ export interface StockShortage {
   productId: string
   productName: string
   productSlug: string
-  size: number
+  size: string
   requested: number
   available: number
-  alternatives: Array<{ variantId: string; size: number; stock: number }>
+  alternatives: Array<{ variantId: string; size: string; stock: number }>
 }
 
 export interface Review {

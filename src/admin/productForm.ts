@@ -45,11 +45,16 @@ export const productFormSchema = z.object({
 export type ProductFormValues = z.input<typeof productFormSchema>
 
 export const sizeRowSchema = z.object({
-  size: z.number({ error: 'Enter a size' }).positive('Size must be positive').max(60).multipleOf(0.5, 'Whole or half sizes only'),
+  size: z
+    .string()
+    .trim()
+    .min(1, 'Enter a size')
+    .max(20)
+    .regex(/^[\w ./-]+$/, "Use letters, numbers, spaces, '/', '.' or '-'"),
   stock: z.number({ error: 'Enter stock' }).int('Whole numbers only').min(0, 'Stock cannot be negative').max(100000),
 })
 
 export const variantsSchema = z
   .array(sizeRowSchema)
   .max(40)
-  .refine((rows) => new Set(rows.map((r) => r.size)).size === rows.length, 'Each size may only appear once')
+  .refine((rows) => new Set(rows.map((r) => r.size.trim().toUpperCase())).size === rows.length, 'Each size may only appear once')

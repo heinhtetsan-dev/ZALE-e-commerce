@@ -1,6 +1,6 @@
-# Shoe Shop — Front-End
+# Stride Fashion — Front-End
 
-Responsive web storefront and admin back office for the Stride shoe shop. It is built mobile-first, so it works in phone browsers as well as on desktop.
+Responsive web storefront and admin back office for the Stride men's and women's fashion shop. It is built mobile-first, so it works in phone browsers as well as on desktop.
 
 **Stack:** React 19, Vite, TypeScript, React Router, TanStack Query, Tailwind CSS 4, Zod, Stripe Elements.
 It talks to the back-end REST API (separate repository) described in `../PROJECT_SPEC.md`.
@@ -49,7 +49,7 @@ e2e/                      Playwright specs
 ## Behaviour notes
 
 - **Filters, sorting and pagination** live in the URL, so results are shareable and survive refresh and the back button.
-- **Size is required** to add to cart. Sold-out sizes are disabled, and low stock shows "Only N left".
+- **Size is required** to add to cart (letter sizes, waist sizes or One Size). Sold-out sizes are disabled, and low stock shows "Only N left".
 - **The cart does not reserve stock.** Stock is reserved when the order is placed. If a size sells out first, checkout shows which item ran out and offers the other in-stock sizes as one-tap swaps.
 - **Guest carts** are merged into the account cart on login or registration.
 - **Payments:** in Stripe test mode the payment page renders the Stripe Payment Element (card `4242 4242 4242 4242`). In mock mode it shows a test "Pay" button.

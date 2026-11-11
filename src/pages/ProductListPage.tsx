@@ -18,9 +18,9 @@ const AUDIENCES: Array<{ value?: Audience; label: string }> = [
 ]
 
 const HERO = {
-  all: { kicker: 'New season', title: 'Find your next favourite pair.' },
-  men: { kicker: "Men's shoes", title: 'Sneakers, runners and boots for men.' },
-  women: { kicker: "Women's shoes", title: 'Sneakers, runners and boots for women.' },
+  all: { kicker: 'New season', title: 'Find your next favourite outfit.' },
+  men: { kicker: "Men's fashion", title: 'Jackets, jeans, shirts and essentials for men.' },
+  women: { kicker: "Women's fashion", title: 'Dresses, knitwear, coats and essentials for women.' },
 }
 
 function SearchForm({ initial, onSearch }: { initial: string; onSearch: (q: string) => void }) {
@@ -35,11 +35,11 @@ function SearchForm({ initial, onSearch }: { initial: string; onSearch: (q: stri
       }}
     >
       <label className="flex-1">
-        <span className="sr-only">Search shoes</span>
+        <span className="sr-only">Search clothing</span>
         <input
           type="search"
           className="input border-transparent"
-          placeholder="Search by name or brand…"
+          placeholder="Search by item, brand or color…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           maxLength={100}
@@ -168,7 +168,7 @@ export function ProductListPage() {
               ))}
               {filters.size.map((s) => (
                 <button key={`size-${s}`} type="button" className="rounded-full bg-stone-200 px-3 py-1 text-xs font-medium" onClick={() => update({ size: filters.size.filter((x) => x !== s) })}>
-                  EU {s} ✕
+                  Size {s} ✕
                 </button>
               ))}
               {(filters.minPrice !== undefined || filters.maxPrice !== undefined) && (
@@ -183,12 +183,12 @@ export function ProductListPage() {
           )}
 
           {products.isPending ? (
-            <Spinner label="Loading shoes…" />
+            <Spinner label="Loading products…" />
           ) : products.isError ? (
             <ErrorBox message={errorMessage(products.error)} onRetry={() => products.refetch()} />
           ) : products.data.items.length === 0 ? (
             <EmptyState
-              title="No shoes match your filters"
+              title="Nothing matches your filters"
               action={
                 <button type="button" className="btn-primary" onClick={() => setParams(new URLSearchParams())}>
                   Reset filters

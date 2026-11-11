@@ -40,7 +40,7 @@ describe('LoginPage', () => {
   it('logs in, merges the guest cart and redirects back', async () => {
     localStorage.setItem(
       'shoeshop.guestCart',
-      JSON.stringify([{ variantId: 'v1', quantity: 2, size: 42, stock: 5, product: { id: 'p', slug: 's', name: 'N', brand: 'B', color: 'C', priceCents: 100, image: null } }]),
+      JSON.stringify([{ variantId: 'v1', quantity: 2, size: 'M', stock: 5, product: { id: 'p', slug: 's', name: 'N', brand: 'B', color: 'C', priceCents: 100, image: null } }]),
     )
     const { calls } = mockApi({
       'POST /auth/login': { body: { token: 't', user: customer } },

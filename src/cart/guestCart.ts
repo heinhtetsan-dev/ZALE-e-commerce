@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react'
 export interface GuestCartItem {
   variantId: string
   quantity: number
-  size: number
+  size: string
   stock: number
   product: { id: string; slug: string; name: string; brand: string; color: string; priceCents: number; image: string | null }
 }

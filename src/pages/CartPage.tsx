@@ -41,7 +41,7 @@ export function CartPage() {
           </Link>
         }
       >
-        Pick a pair you love and choose your size to add it here.
+        Find something you love and choose your size to add it here.
       </EmptyState>
     )
   }

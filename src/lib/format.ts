@@ -2,7 +2,7 @@ const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: '
 
 export const money = (cents: number) => currency.format(cents / 100)
 
-export const formatSize = (size: number) => `EU ${size}`
+export const formatSize = (size: string) => (size === 'One Size' ? size : `Size ${size}`)
 
 export const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })

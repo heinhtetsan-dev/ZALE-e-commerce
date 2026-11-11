@@ -55,17 +55,17 @@ export function PageTitle({ children, subtitle }: { children: ReactNode; subtitl
   )
 }
 
-const SHOE_PLACEHOLDER =
+const IMAGE_PLACEHOLDER =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#f5f5f4"/><path d="M20 78c10 0 18-4 26-14l8 6c6 4 14 6 24 7l14 2c6 1 8 4 8 9v4H20z" fill="#d6d3d1"/></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#f5f5f4"/><g fill="none" stroke="#d6d3d1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M54 40a6 6 0 1 1 8 5.7c-1.4.5-2 1.4-2 2.8V52"/><path d="M60 52 24 74c-3 2-2 6 2 6h68c4 0 5-4 2-6z"/></g></svg>`,
   )
 
 export function ProductImage({ src, alt, className = '' }: { src: string | null; alt: string; className?: string }) {
   const [failed, setFailed] = useState(false)
   return (
     <img
-      src={!src || failed ? SHOE_PLACEHOLDER : src}
+      src={!src || failed ? IMAGE_PLACEHOLDER : src}
       alt={alt}
       loading="lazy"
       decoding="async"

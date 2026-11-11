@@ -94,8 +94,8 @@ export function FilterPanel({ facets, filters, onChange }: { facets: Facets; fil
           onToggle={(v) => onChange({ brand: toggle(filters.brand, v) })}
         />
       </Section>
-      <Section title="Size (EU, in stock)">
-        <div className="grid grid-cols-4 gap-2">
+      <Section title="Size (in stock)">
+        <div className="flex flex-wrap gap-2">
           {facets.sizes.map((s) => {
             const on = filters.size.includes(s)
             return (
@@ -104,7 +104,7 @@ export function FilterPanel({ facets, filters, onChange }: { facets: Facets; fil
                 type="button"
                 aria-pressed={on}
                 onClick={() => onChange({ size: toggle(filters.size, s) })}
-                className={`rounded-lg border py-2 text-sm font-medium ${on ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-300 bg-white hover:border-stone-900'}`}
+                className={`min-w-12 rounded-lg border px-3 py-2 text-sm font-medium ${on ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-300 bg-white hover:border-stone-900'}`}
               >
                 {s}
               </button>

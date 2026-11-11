@@ -125,7 +125,7 @@ function ProductForm({ product, brands, categories }: { product?: AdminProduct; 
         </div>
         <FormField id="price" label="Price (USD)" inputMode="decimal" value={values.price} error={errors.price} onChange={set('price')} />
         <FormField id="color" label="Base color (for filters)" placeholder="e.g. White" value={values.color} error={errors.color} onChange={set('color')} />
-        <FormField id="colorway" label="Colorway name" placeholder="e.g. White/Black-Infrared" value={values.colorway} error={errors.colorway} onChange={set('colorway')} />
+        <FormField id="colorway" label="Color name (as sold)" placeholder="e.g. Medium Stonewash" value={values.colorway} error={errors.colorway} onChange={set('colorway')} />
         <div className="sm:col-span-2">
           <FormField
             id="styleGroup"
@@ -148,7 +148,7 @@ function ProductForm({ product, brands, categories }: { product?: AdminProduct; 
         <label className="label" htmlFor="images">
           Images (one CDN URL or object key per line)
         </label>
-        <textarea id="images" rows={3} className="input font-mono text-xs" value={values.images} onChange={set('images')} placeholder="https://cdn.example.com/products/shoe.jpg" aria-invalid={!!errors.images} />
+        <textarea id="images" rows={3} className="input font-mono text-xs" value={values.images} onChange={set('images')} placeholder="https://cdn.example.com/products/jacket.jpg" aria-invalid={!!errors.images} />
         <FieldError message={errors.images} />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -191,7 +191,7 @@ function StockEditor({ product }: { product: AdminProduct }) {
   const [saved, setSaved] = useState(false)
 
   const save = useMutation({
-    mutationFn: (variants: Array<{ size: number; stock: number }>) => api<AdminProduct>(`/admin/products/${product.id}/variants`, { method: 'PUT', body: { variants } }),
+    mutationFn: (variants: Array<{ size: string; stock: number }>) => api<AdminProduct>(`/admin/products/${product.id}/variants`, { method: 'PUT', body: { variants } }),
     onSuccess: (p) => {
       queryClient.setQueryData(['admin', 'product', p.id], p)
       queryClient.invalidateQueries({ queryKey: ['admin', 'products'] })
@@ -208,7 +208,7 @@ function StockEditor({ product }: { product: AdminProduct }) {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    const parsed = variantsSchema.safeParse(rows.map((r) => ({ size: r.size === '' ? NaN : Number(r.size), stock: r.stock === '' ? NaN : Number(r.stock) })))
+    const parsed = variantsSchema.safeParse(rows.map((r) => ({ size: r.size, stock: r.stock === '' ? NaN : Number(r.stock) })))
     if (!parsed.success) return setErrors(fieldErrorsOf(parsed.error))
     setErrors({})
     save.mutate(parsed.data)
@@ -220,9 +220,9 @@ function StockEditor({ product }: { product: AdminProduct }) {
     <form onSubmit={submit} noValidate className="card space-y-4 p-5">
       <div className="flex items-baseline justify-between">
         <h2 className="text-lg font-semibold">Stock per size</h2>
-        <span className="text-sm text-stone-600">{total} pairs total</span>
+        <span className="text-sm text-stone-600">{total} items in stock</span>
       </div>
-      <p className="text-xs text-stone-500">Set the absolute stock for each EU size. Removing a size that has been ordered sets its stock to 0 instead.</p>
+      <p className="text-xs text-stone-500">Set the absolute stock for each size (e.g. XS–XXL, waist 32, One Size). Removing a size that has been ordered sets its stock to 0 instead.</p>
       {rows.length === 0 && <p className="text-sm text-stone-600">No sizes yet.</p>}
       <ul className="space-y-2">
         {rows.map((r, i) => (
@@ -231,7 +231,7 @@ function StockEditor({ product }: { product: AdminProduct }) {
               <label className="sr-only" htmlFor={`size-${r.key}`}>
                 Size
               </label>
-              <input id={`size-${r.key}`} className="input" inputMode="decimal" placeholder="Size" value={r.size} onChange={(e) => update(r.key, 'size', e.target.value)} aria-invalid={!!errors[`${i}.size`]} />
+              <input id={`size-${r.key}`} className="input" placeholder="Size" value={r.size} onChange={(e) => update(r.key, 'size', e.target.value)} aria-invalid={!!errors[`${i}.size`]} />
               <FieldError message={errors[`${i}.size`]} />
             </div>
             <div className="flex-1">

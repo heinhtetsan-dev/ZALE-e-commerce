@@ -23,8 +23,8 @@ export function WishlistPage() {
       ) : list.isError ? (
         <ErrorBox message={errorMessage(list.error)} onRetry={() => list.refetch()} />
       ) : list.data.items.length === 0 ? (
-        <EmptyState title="Your wishlist is empty" action={<Link to="/" className="btn-primary">Browse shoes</Link>}>
-          Tap the heart on any shoe to save it for later.
+        <EmptyState title="Your wishlist is empty" action={<Link to="/" className="btn-primary">Browse the shop</Link>}>
+          Tap the heart on any item to save it for later.
         </EmptyState>
       ) : (
         <>

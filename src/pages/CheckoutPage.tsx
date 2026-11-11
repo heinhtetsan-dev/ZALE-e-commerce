@@ -158,7 +158,7 @@ function CheckoutForm({ userName }: { userName: string }) {
             <button type="submit" className="btn-accent w-full py-3" disabled={placeOrder.isPending}>
               {placeOrder.isPending ? 'Placing order…' : 'Place order & pay'}
             </button>
-            <p className="mt-3 text-center text-xs text-stone-500">Your pairs are reserved when you place the order. Unpaid orders are released after 30 minutes.</p>
+            <p className="mt-3 text-center text-xs text-stone-500">Your items are reserved when you place the order. Unpaid orders are released after 30 minutes.</p>
           </OrderSummary>
         </div>
       </form>

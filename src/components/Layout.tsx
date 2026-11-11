@@ -40,7 +40,7 @@ export function Layout() {
     <>
       {shopLink('/?gender=men', 'men', 'Men')}
       {shopLink('/?gender=women', 'women', 'Women')}
-      {shopLink('/', 'all', 'All shoes')}
+      {shopLink('/', 'all', 'All')}
       {user && (
         <>
           <NavLink to="/wishlist" className={navLinkClass}>
@@ -130,7 +130,7 @@ export function Layout() {
 
       <footer className="border-t border-stone-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-sm text-stone-500 sm:flex-row sm:justify-between sm:px-6">
-          <p>© {YEAR} Stride Shoe Shop</p>
+          <p>© {YEAR} Stride Fashion</p>
           <p>Free shipping on orders over $100 · 30-day returns</p>
         </div>
       </footer>

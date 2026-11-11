@@ -35,7 +35,7 @@ export function ProductDetailPage() {
     return (
       <ErrorBox
         title={notFound ? 'Product not found' : 'Could not load this product'}
-        message={notFound ? 'It may have been removed. Browse our other shoes instead.' : errorMessage(product.error)}
+        message={notFound ? 'It may have been removed. Browse the rest of the shop instead.' : errorMessage(product.error)}
         onRetry={notFound ? undefined : () => product.refetch()}
       />
     )
@@ -139,15 +139,15 @@ export function ProductDetailPage() {
           </div>
           <p className="mt-4 text-2xl font-bold">{money(p.priceCents)}</p>
           <p className="mt-1 text-sm text-stone-600">
-            {genderLabel(p.gender)} {p.category.name.toLowerCase()} shoe
+            {genderLabel(p.gender)} · {p.category.name}
           </p>
 
           <div className="mt-6">
             <p className="text-sm">
-              <span className="font-semibold">Colorway:</span> {p.colorway ?? p.color}
+              <span className="font-semibold">Color:</span> {p.colorway ?? p.color}
             </p>
             {p.colorways.length > 1 && (
-              <ul className="mt-2 flex flex-wrap gap-2" aria-label="Other colorways">
+              <ul className="mt-2 flex flex-wrap gap-2" aria-label="Other colors">
                 {p.colorways.map((c) => {
                   const isCurrent = c.slug === p.slug
                   return (
@@ -170,13 +170,13 @@ export function ProductDetailPage() {
 
           <fieldset className="mt-6">
             <legend className="mb-2 flex w-full items-center justify-between text-sm font-semibold">
-              <span>Select size (EU{p.gender === 'UNISEX' ? ', unisex' : p.gender === 'MEN' ? ", men's" : ", women's"})</span>
+              <span>Select size{p.gender === 'UNISEX' ? ' (unisex)' : p.gender === 'MEN' ? " (men's)" : " (women's)"}</span>
               {current && <span className={current.stockStatus === 'low_stock' ? 'text-amber-700' : 'text-emerald-700'}>{stockLabel(current.stock)}</span>}
             </legend>
             {p.variants.length === 0 ? (
               <p className="text-sm text-stone-600">No sizes available.</p>
             ) : (
-              <div className="grid grid-cols-4 gap-2 sm:grid-cols-5" role="radiogroup" aria-label="Size">
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Size">
                 {p.variants.map((v) => {
                   const out = v.stock === 0
                   const isSelected = current?.id === v.id
@@ -193,7 +193,7 @@ export function ProductDetailPage() {
                         setSizeError(false)
                         setMessage(null)
                       }}
-                      className={`relative rounded-lg border py-3 text-sm font-semibold transition ${
+                      className={`relative min-w-14 rounded-lg border px-4 py-3 text-sm font-semibold transition ${
                         isSelected
                           ? 'border-stone-900 bg-stone-900 text-white'
                           : out
@@ -220,7 +220,7 @@ export function ProductDetailPage() {
 
           {inStockSizes.length === 0 && p.variants.length > 0 && (
             <div className="mt-4">
-              <Notice tone="warning">This shoe is sold out in every size. Check back soon or browse similar styles.</Notice>
+              <Notice tone="warning">This item is sold out in every size. Check back soon or browse similar styles.</Notice>
             </div>
           )}
 

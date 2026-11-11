@@ -59,7 +59,7 @@ export function OrderDetailPage() {
 
       {awaitingPayment && (
         <div className="mb-6 flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 sm:flex-row sm:items-center">
-          <p className="flex-1">This order is waiting for payment. Your pairs are reserved for a limited time.</p>
+          <p className="flex-1">This order is waiting for payment. Your items are reserved for a limited time.</p>
           <div className="flex gap-2">
             <button type="button" className="btn-secondary" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
               Cancel order

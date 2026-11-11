@@ -11,7 +11,7 @@ export interface CartLine {
   key: string
   variantId: string
   quantity: number
-  size: number
+  size: string
   stock: number
   product: GuestCartItem['product']
   lineTotalCents: number

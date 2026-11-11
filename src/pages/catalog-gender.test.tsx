@@ -5,18 +5,18 @@ import { mockApi, renderRoute, sampleProduct } from '../test/utils'
 import { ProductDetailPage } from './ProductDetailPage'
 import { ProductListPage } from './ProductListPage'
 
-const facets = { brands: [], categories: [], colors: [], sizes: [40, 42], price: { min: 5000, max: 20000 } }
+const facets = { brands: [], categories: [], colors: [], sizes: ['S', 'M'], price: { min: 5000, max: 20000 } }
 const page = { items: [{ ...sampleProduct }], page: 1, pageSize: 12, total: 1, totalPages: 1 }
 
 describe("men's / women's catalog", () => {
   it('switches audience via tabs, scoping products and facets and dropping size filters', async () => {
     const { calls } = mockApi({ 'GET /products/facets': { body: facets }, 'GET /products': { body: page } })
-    const { router } = renderRoute(<ProductListPage />, { path: '/', route: '/?size=42' })
+    const { router } = renderRoute(<ProductListPage />, { path: '/', route: '/?size=M' })
     await screen.findByText('1 result')
     await userEvent.click(screen.getByRole('tab', { name: 'Women' }))
 
     expect(router.state.location.search).toBe('?gender=women')
-    expect(await screen.findByRole('heading', { name: 'Sneakers, runners and boots for women.' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Dresses, knitwear, coats and essentials for women.' })).toBeInTheDocument()
     await waitFor(() => {
       expect(calls.some((c) => c.path === '/products' && c.method === 'GET')).toBe(true)
     })
@@ -40,8 +40,8 @@ describe('product detail colorways', () => {
   it('shows colorway, links other colorways and credits the photo', async () => {
     mockApi({ 'GET /products/nike-air': { body: sampleProduct } })
     renderRoute(<ProductDetailPage />, { path: '/products/:slug', route: '/products/nike-air' })
-    expect(await screen.findByText("Select size (EU, men's)")).toBeInTheDocument()
-    expect(screen.getByText('Colorway:').parentElement).toHaveTextContent('Colorway: Black/White')
+    expect(await screen.findByText("Select size (men's)")).toBeInTheDocument()
+    expect(screen.getByText('Color:').parentElement).toHaveTextContent('Color: Black/White')
     expect(screen.getByRole('link', { name: 'University Red, sold out' })).toHaveAttribute('href', '/products/nike-air-red')
     expect(screen.getByRole('link', { name: 'Black/White' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: /Jane Doe, CC BY-SA 4.0/ })).toHaveAttribute('href', sampleProduct.imageSourceUrl)

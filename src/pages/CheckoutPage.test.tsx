@@ -9,8 +9,8 @@ const cart = {
     {
       id: 'ci1',
       quantity: 1,
-      variant: { id: 'v42', size: 42, stock: 1, stockStatus: 'low_stock' },
-      product: { id: 'p1', slug: 'nike-air', name: 'Nike Air', brand: 'Nike', color: 'Black', priceCents: 12000, image: null, isActive: true },
+      variant: { id: 'v42', size: 'M', stock: 1, stockStatus: 'low_stock' },
+      product: { id: 'p1', slug: 'nike-air', name: 'Nike Club Hoodie', brand: 'Nike', color: 'Black', priceCents: 12000, image: null, isActive: true },
       lineTotalCents: 12000,
       issue: null,
     },
@@ -34,7 +34,7 @@ describe('CheckoutPage', () => {
     expect(calls.some((c) => c.method === 'POST')).toBe(false)
   })
 
-  it('shows a clear sold-out message with alternative sizes when the last pair is gone', async () => {
+  it('shows a clear sold-out message with alternative sizes when the last one is gone', async () => {
     mockApi({
       ...loginAs(),
       'GET /cart': { body: cart },
@@ -43,20 +43,20 @@ describe('CheckoutPage', () => {
         body: {
           error: {
             code: 'OUT_OF_STOCK',
-            message: 'Nike Air in size 42 is sold out.',
+            message: 'Nike Club Hoodie in size M is sold out.',
             details: {
               items: [
                 {
                   variantId: 'v42',
                   productId: 'p1',
-                  productName: 'Nike Air',
+                  productName: 'Nike Club Hoodie',
                   productSlug: 'nike-air',
-                  size: 42,
+                  size: 'M',
                   requested: 1,
                   available: 0,
                   alternatives: [
-                    { variantId: 'v43', size: 43, stock: 4 },
-                    { variantId: 'v44', size: 44, stock: 2 },
+                    { variantId: 'v43', size: 'L', stock: 4 },
+                    { variantId: 'v44', size: 'XL', stock: 2 },
                   ],
                 },
               ],
@@ -70,9 +70,9 @@ describe('CheckoutPage', () => {
     await fillAddress()
     await userEvent.click(screen.getByRole('button', { name: 'Place order & pay' }))
 
-    expect(await screen.findByText('Sorry — Nike Air in EU 42 just sold out.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'EU 43' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'EU 44' })).toBeInTheDocument()
+    expect(await screen.findByText('Sorry — Nike Club Hoodie in Size M just sold out.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Size L' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Size XL' })).toBeInTheDocument()
   })
 
   it('places the order and moves to payment', async () => {

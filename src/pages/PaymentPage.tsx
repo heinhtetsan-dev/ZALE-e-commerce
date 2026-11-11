@@ -49,7 +49,7 @@ export function PaymentPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageTitle subtitle={`Order #${o.number} · your pairs are reserved for 30 minutes`}>Payment</PageTitle>
+      <PageTitle subtitle={`Order #${o.number} · your items are reserved for 30 minutes`}>Payment</PageTitle>
       <div className="grid gap-8 md:grid-cols-[1fr_20rem]">
         <section className="card p-5">
           {session.isPending ? (
