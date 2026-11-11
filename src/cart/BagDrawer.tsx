@@ -10,7 +10,13 @@ import { FREE_SHIPPING_THRESHOLD_CENTS } from '../lib/shipping'
 import { useBag } from './bag'
 import { MAX_LINE_QUANTITY, useCart, type CartLine } from './useCart'
 
-/** Slide-over bag: opens after "Add to bag" and from the header bag button. */
+/** Matches the closing transition (duration-300) so the drawer unmounts once it is off screen. */
+const CLOSE_MS = 300
+
+/**
+ * Slide-over bag: opens after "Add to bag" and from the header bag button.
+ * Slides in with an ease-out curve and leaves with an ease-in curve.
+ */
 export function BagDrawer() {
   const bag = useBag()
   const { user } = useAuth()
@@ -41,7 +47,31 @@ export function BagDrawer() {
     }
   }, [bag, bag.isOpen])
 
-  if (!bag.isOpen) return null
+  // Stay mounted while the close animation plays; `entered` flips one frame
+  // after mounting so the browser animates from the off-screen position.
+  const [mounted, setMounted] = useState(false)
+  const [entered, setEntered] = useState(false)
+  if (bag.isOpen && !mounted) setMounted(true)
+  useEffect(() => {
+    if (bag.isOpen) {
+      let frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => setEntered(true))
+      })
+      return () => cancelAnimationFrame(frame)
+    }
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const timer = window.setTimeout(
+      () => {
+        setMounted(false)
+        setEntered(false)
+      },
+      reduced ? 0 : CLOSE_MS,
+    )
+    return () => window.clearTimeout(timer)
+  }, [bag.isOpen])
+  const shown = bag.isOpen && entered
+
+  if (!mounted) return null
 
   const changeQty = async (line: CartLine, quantity: number) => {
     setLineError(null)
@@ -56,9 +86,25 @@ export function BagDrawer() {
   const hasIssues = cart.lines.some((l) => l.issue)
 
   return (
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Shopping bag">
-      <div className="absolute inset-0 bg-ink/40" onClick={bag.close} />
-      <aside className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-cream shadow-2xl">
+    <div
+      className={`fixed inset-0 z-50 ${bag.isOpen ? '' : 'pointer-events-none'}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Shopping bag"
+      aria-hidden={!bag.isOpen || undefined}
+      inert={!bag.isOpen}
+    >
+      <div
+        className={`absolute inset-0 bg-ink/40 transition-opacity motion-reduce:transition-none ${
+          shown ? 'opacity-100 duration-500 ease-out' : 'opacity-0 duration-300 ease-in'
+        }`}
+        onClick={bag.close}
+      />
+      <aside
+        className={`absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-cream shadow-2xl transition-transform will-change-transform motion-reduce:transition-none ${
+          shown ? 'translate-x-0 duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]' : 'translate-x-full duration-300 ease-[cubic-bezier(0.64,0,0.78,0)]'
+        }`}
+      >
         <div className="flex items-center justify-between border-b border-sand-300 px-6 py-5">
           <h2 className="eyebrow text-ink">Your bag ({cart.itemCount})</h2>
           <button ref={closeRef} type="button" onClick={bag.close} className="-mr-2 p-2" aria-label="Close bag">

@@ -7,7 +7,7 @@
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-serif: 'Cormorant Garamond', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
 
-  /* LUNE palette: warm cream page, black ink, sand tones for image tiles. */
+  /* ZALE palette: warm cream page, black ink, sand tones for image tiles. */
   --color-cream: #f4f0ea;
   --color-paper: #fbf9f6;
   --color-ink: #1b1b1b;
@@ -17,7 +17,7 @@
   --color-sand-400: #cfc6b8;
   --color-taupe: #6b655d;
 
-  /* Accent ramp kept for existing components; in LUNE it is ink-led and neutral. */
+  /* Accent ramp kept for existing components; in ZALE it is ink-led and neutral. */
   --color-brand-50: #f4f0ea;
   --color-brand-100: #e8e2d8;
   --color-brand-500: #8a7b68;

@@ -23,7 +23,7 @@ export function Newsletter() {
       <div className="mx-auto grid max-w-360 gap-8 px-4 py-14 sm:px-8 md:grid-cols-2 md:items-center">
         <div>
           <h2 id="newsletter-title" className="display text-4xl">
-            Join the LUNE list
+            Join the ZALE list
           </h2>
           <p className="mt-2 text-sm text-cream/75">New collections and private sales, first.</p>
         </div>

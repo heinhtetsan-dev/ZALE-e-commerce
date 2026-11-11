@@ -15,24 +15,34 @@ test("women's and men's sections, color switching and photo credits", async ({ p
   await expect(page).toHaveURL(/\/shop\?gender=men$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Men' })).toBeVisible()
 
-  // The men's Levi's 501 comes in two washes, shown as color dots on the card.
-  await page.getByRole('searchbox', { name: 'Search clothing' }).fill('501')
-  await page.getByRole('main').getByRole('button', { name: 'Search' }).click()
-  const card = page.locator('article', { hasText: '$79.50' })
-  await expect(card.getByRole('list', { name: 'Colors' }).getByRole('link')).toHaveCount(2)
-  await card.getByRole('link', { name: "Levi's 501 Original Fit Jeans" }).click()
+  // Shoes have no section of their own: men's shoes are under Men.
+  if (isMobile) await page.getByRole('button', { name: /^Filters/ }).click()
+  const filters = isMobile ? page.getByRole('dialog', { name: 'Filters' }) : page.getByRole('complementary', { name: 'Filters' })
+  await filters.getByLabel('Shoes').click()
+  await expect(page).toHaveURL(/gender=men.*category=shoes|category=shoes.*gender=men/)
+  if (isMobile) await filters.getByRole('button', { name: /^Show/ }).click()
+  await expect(page.locator('article', { hasText: 'Chelsea Boots' })).toBeVisible()
+  await expect(page.locator('article', { hasText: 'Strappy Heeled Sandals' })).toHaveCount(0)
 
-  await expect(page.getByText('Color:').locator('..')).toContainText('Medium Stonewash')
-  await expect(page.getByText(/via Wikimedia Commons/)).toBeVisible()
-  await page.getByRole('list', { name: 'Other colors' }).getByRole('link', { name: /Light Indigo/ }).click()
-  await expect(page).toHaveURL(/light-indigo/)
-  await expect(page.getByText('Color:').locator('..')).toContainText('Light Indigo Destructed')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText("Levi's 501 Original Fit Jeans")
+  // The men's Slim Jeans come in three colors, named in text (no color boxes).
+  await page.goto('/shop?gender=men&q=slim%20jeans')
+  const card = page.locator('article', { hasText: 'Mid Blue' })
+  await expect(card).toContainText('3 colors')
+  await expect(page.getByRole('list', { name: 'Colors' })).toHaveCount(0)
+  await card.getByRole('link', { name: 'Slim Jeans' }).click()
+
+  await expect(page.getByText('Color:').locator('..')).toContainText('Mid Blue')
+  await expect(page.getByText(/Photo: Unsplash/)).toBeVisible()
+  await page.getByRole('list', { name: 'Other colors' }).getByRole('link', { name: /Dark Indigo/ }).click()
+  await expect(page).toHaveURL(/dark-indigo/)
+  await expect(page.getByText('Color:').locator('..')).toContainText('Dark Indigo')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Slim Jeans')
+  await expect(page.getByRole('link', { name: /^Mid Blue/ })).toBeVisible()
 })
 
 test('newsletter sign-up on the home page', async ({ page }) => {
   await page.goto('/')
-  const band = page.getByRole('region', { name: 'Join the LUNE list' })
+  const band = page.getByRole('region', { name: 'Join the ZALE list' })
   await band.getByRole('textbox', { name: 'Email address' }).fill('not-an-email')
   await band.getByRole('button', { name: 'Subscribe' }).click()
   await expect(band.getByRole('alert')).toHaveText('Enter a valid email address')

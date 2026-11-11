@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { useAddToBag } from '../cart/useAddToBag'
 import { errorMessage } from '../lib/api'
-import { swatchStyle } from '../lib/colors'
 import { money } from '../lib/format'
 import type { ProductCard as Product } from '../lib/types'
 import { ProductImage } from './ui'
@@ -112,24 +111,10 @@ export function ProductCard({ product, tone = 0 }: { product: Product; tone?: nu
         <h3>{product.name}</h3>
       </Link>
       <p className="mt-0.5 text-sm font-medium">{money(product.priceCents)}</p>
-      {product.swatches.length > 1 ? (
-        <ul className="mt-2 flex gap-1.5" aria-label="Colors">
-          {product.swatches.map((s) => (
-            <li key={s.slug}>
-              <Link
-                to={`/products/${s.slug}`}
-                aria-label={s.colorway ?? s.color}
-                title={s.colorway ?? s.color}
-                aria-current={s.slug === product.slug ? 'true' : undefined}
-                className={`block size-3.5 rounded-full ring-offset-2 ring-offset-cream ${s.slug === product.slug ? 'ring-1 ring-ink' : 'ring-1 ring-sand-400'}`}
-                style={swatchStyle(s.color, s.colorway)}
-              />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-1 text-xs text-taupe">{product.colorway ?? product.color}</p>
-      )}
+      <p className="mt-1 text-xs text-taupe">
+        {product.colorway ?? product.color}
+        {product.swatches.length > 1 && ` · ${product.swatches.length} colors`}
+      </p>
     </article>
   )
 }

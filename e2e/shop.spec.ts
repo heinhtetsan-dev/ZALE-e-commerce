@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { newShopper } from './helpers.js'
 
 const CUSTOMER = { email: 'customer@shoeshop.test', password: 'Customer123!' }
 
@@ -9,9 +10,9 @@ async function openFirstInStockProduct(page: Page) {
   await expect(page.getByRole('radiogroup', { name: 'Size' })).toBeVisible()
 }
 
-async function login(page: Page) {
-  await page.getByLabel('Email').fill(CUSTOMER.email)
-  await page.getByLabel('Password').fill(CUSTOMER.password)
+async function login(page: Page, who = CUSTOMER) {
+  await page.getByLabel('Email').fill(who.email)
+  await page.getByLabel('Password').fill(who.password)
   await page.getByRole('button', { name: 'Log in' }).click()
 }
 
@@ -19,11 +20,11 @@ test('search, filter, sort and paginate the catalog', async ({ page, isMobile })
   await page.goto('/shop')
   await expect(page.getByText(/\d+ results/)).toBeVisible()
 
-  await page.getByRole('searchbox', { name: 'Search clothing' }).fill('levi')
+  await page.getByRole('searchbox', { name: 'Search clothing' }).fill('slim jeans')
   await page.getByRole('main').getByRole('button', { name: 'Search' }).click()
-  await expect(page).toHaveURL(/q=levi/)
+  await expect(page).toHaveURL(/q=slim/)
   await expect(page.locator('article')).toHaveCount(3)
-  for (const text of await page.locator('article').allTextContents()) expect(text).toContain("Levi's")
+  for (const text of await page.locator('article').allTextContents()) expect(text).toContain('Slim Jeans')
 
   await page.goto('/shop')
   if (isMobile) await page.getByRole('button', { name: /^Filters/ }).click()
@@ -34,7 +35,7 @@ test('search, filter, sort and paginate the catalog', async ({ page, isMobile })
   await expect(page).toHaveURL(/color=Black/)
   if (isMobile) await filters.getByRole('button', { name: /^Show/ }).click()
   await expect(page.locator('article').first()).toBeVisible()
-  await expect(page.locator('article')).toHaveCount(4)
+  await expect(page.locator('article')).toHaveCount(2)
   for (const text of await page.locator('article').allTextContents()) expect(text).toMatch(/Black/)
 
   await page.goto('/shop?sort=price_desc')
@@ -63,7 +64,8 @@ test('filters keep the scroll position and there is no brand filter', async ({ p
   expect(Math.abs(after - before)).toBeLessThan(50)
 })
 
-test('guest bag requires a size, opens the bag drawer, then checks out after login', async ({ page }) => {
+test('guest bag requires a size, opens the bag drawer, then checks out after login', async ({ page, request }) => {
+  const shopper = await newShopper(request)
   await openFirstInStockProduct(page)
   const name = (await page.getByRole('heading', { level: 1 }).textContent())!.trim()
 
@@ -80,11 +82,11 @@ test('guest bag requires a size, opens the bag drawer, then checks out after log
   await expect(page.getByRole('button', { name: 'Bag, 1 items' })).toBeAttached()
   await bag.getByRole('button', { name: 'Log in to checkout' }).click()
 
-  await login(page)
+  await login(page, shopper)
   await expect(page).toHaveURL(/\/checkout$/)
   await expect(page.getByText(name).first()).toBeVisible()
 
-  await page.getByLabel('Full name').fill('Casey Customer')
+  await page.getByLabel('Full name').fill('Test Shopper')
   await page.getByLabel('Address', { exact: true }).fill('1 Test Street')
   await page.getByLabel('City').fill('Springfield')
   await page.getByLabel('Postal code').fill('12345')
@@ -135,12 +137,12 @@ test('quick add from a product card opens the bag drawer', async ({ page }) => {
   await expect(bag.getByText('Added to your bag')).toBeVisible()
   await expect(bag.getByText(name)).toBeVisible()
   await page.keyboard.press('Escape')
-  await expect(bag).toHaveCount(0)
+  await expect(bag).toBeHidden()
 })
 
 test('layout is usable on narrow screens without horizontal scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 })
-  for (const path of ['/', '/shop', '/products/levis-501-original-fit-jeans-medium-stonewash-mens', '/cart', '/login', '/help/size-guide']) {
+  for (const path of ['/', '/shop', '/products/slim-jeans-mid-blue-mens', '/cart', '/login', '/help/size-guide']) {
     await page.goto(path)
     await page.waitForLoadState('networkidle')
     const overflow = await page.evaluate(() => {

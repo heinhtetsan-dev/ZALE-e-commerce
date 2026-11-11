@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { newShopper } from './helpers.js'
 
 const ADMIN = { email: 'admin@shoeshop.test', password: 'Admin123!' }
 const CUSTOMER = { email: 'customer@shoeshop.test', password: 'Customer123!' }
@@ -35,7 +36,7 @@ test('customers cannot open admin pages', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Admin' })).toHaveCount(0)
 })
 
-test('admin creates a product, stocks sizes, and fulfils an order', async ({ page }) => {
+test('admin creates a product, stocks sizes, and fulfils an order', async ({ page, request }) => {
   const name = `E2E Tee ${Date.now()}`
 
   await login(page, ADMIN)
@@ -47,8 +48,8 @@ test('admin creates a product, stocks sizes, and fulfils an order', async ({ pag
   await page.getByRole('navigation', { name: 'Admin' }).getByRole('link', { name: 'Products' }).click()
   await page.getByRole('link', { name: '+ New product' }).click()
   await page.getByLabel('Name', { exact: true }).fill(name)
-  await page.getByLabel('Brand').selectOption({ label: 'LUNE Essentials' })
-  await page.getByLabel('Category').selectOption({ label: 'T-Shirts & Polos' })
+  await page.getByLabel('Brand').selectOption({ label: 'ZALE Essentials' })
+  await page.getByLabel('Category').selectOption({ label: 'Tops & T-Shirts' })
   await page.getByLabel('Base color (for filters)').fill('Green')
   await page.getByLabel('Color name (as sold)').fill('Forest Green')
   await page.getByLabel('Gender').selectOption('MEN')
@@ -69,8 +70,8 @@ test('admin creates a product, stocks sizes, and fulfils an order', async ({ pag
   await expect(page.getByText('3 items in stock')).toBeVisible()
   await logout(page)
 
-  // Customer buys the only size M
-  await login(page, CUSTOMER)
+  // A shopper buys the only size M
+  await login(page, await newShopper(request))
   await page.goto(`/shop?q=${encodeURIComponent(name)}`)
   await page.locator('article a').first().click()
   await expect(page.getByText('$99.50')).toBeVisible()
@@ -79,7 +80,7 @@ test('admin creates a product, stocks sizes, and fulfils an order', async ({ pag
   await page.getByRole('button', { name: 'Add to bag' }).click()
   await expect(page.getByRole('dialog', { name: 'Shopping bag' }).getByText('Added to your bag')).toBeVisible()
   await page.goto('/checkout')
-  await page.getByLabel('Full name').fill('Casey Customer')
+  await page.getByLabel('Full name').fill('Test Shopper')
   await page.getByLabel('Address', { exact: true }).fill('1 Test Street')
   await page.getByLabel('City').fill('Springfield')
   await page.getByLabel('Postal code').fill('12345')

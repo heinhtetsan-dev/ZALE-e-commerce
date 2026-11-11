@@ -113,8 +113,8 @@ export function Layout() {
             </nav>
           </div>
 
-          <Link to="/" className="font-serif text-3xl tracking-[0.32em] sm:text-4xl" aria-label="LUNE home">
-            LUNE
+          <Link to="/" className="font-serif text-3xl tracking-[0.32em] sm:text-4xl" aria-label="ZALE home">
+            ZALE
           </Link>
 
           <div className="flex items-center justify-end gap-1 sm:gap-2">
@@ -206,7 +206,7 @@ export function Layout() {
       <footer className="border-t border-sand-300">
         <div className="mx-auto flex max-w-360 flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <Link to="/" className="font-serif text-2xl tracking-[0.32em]">
-            LUNE
+            ZALE
           </Link>
           <nav aria-label="Help" className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
             {FOOTER_LINKS.map((l) => (

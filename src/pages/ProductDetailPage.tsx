@@ -8,7 +8,6 @@ import { SizeGuideDialog } from '../components/SizeGuide'
 import { ErrorBox, ProductImage, Spinner, Stars } from '../components/ui'
 import { WishlistButton } from '../components/WishlistButton'
 import { api, ApiError, errorMessage } from '../lib/api'
-import { swatchStyle } from '../lib/colors'
 import { money, stockLabel } from '../lib/format'
 import { careAdvice, deliveryPolicy, returnsPolicy } from '../lib/policies'
 import type { ProductDetail, Variant } from '../lib/types'
@@ -129,23 +128,21 @@ export function ProductDetailPage() {
               Color: <span className="font-semibold">{p.colorway ?? p.color}</span>
             </p>
             {p.colorways.length > 1 && (
-              <ul className="mt-3 flex flex-wrap gap-3" aria-label="Other colors">
-                {p.colorways.map((c) => {
-                  const isCurrent = c.slug === p.slug
-                  return (
-                    <li key={c.slug}>
-                      <Link
-                        to={`/products/${c.slug}`}
-                        aria-current={isCurrent ? 'page' : undefined}
-                        title={`${c.colorway ?? c.color}${c.inStock ? '' : ' (sold out)'}`}
-                        aria-label={`${c.colorway ?? c.color}${c.inStock ? '' : ', sold out'}`}
-                        className={`block size-11 rounded-full border-[3px] border-cream ${isCurrent ? 'ring-2 ring-ink' : 'ring-1 ring-sand-400 hover:ring-ink'} ${c.inStock ? '' : 'opacity-50'}`}
-                        style={swatchStyle(c.color, c.colorway)}
-                      />
-                    </li>
-                  )
-                })}
-              </ul>
+              <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+                <span className="text-taupe">Also in:</span>
+                <ul className="contents" aria-label="Other colors">
+                  {p.colorways
+                    .filter((c) => c.slug !== p.slug)
+                    .map((c) => (
+                      <li key={c.slug}>
+                        <Link to={`/products/${c.slug}`} className={`link-underline ${c.inStock ? '' : 'text-taupe'}`}>
+                          {c.colorway ?? c.color}
+                          {!c.inStock && ' (sold out)'}
+                        </Link>
+                      </li>
+                    ))}
+                </ul>
+              </div>
             )}
           </div>
 

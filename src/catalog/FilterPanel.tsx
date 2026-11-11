@@ -1,5 +1,4 @@
 import { useState, type ReactNode } from 'react'
-import { swatchStyle } from '../lib/colors'
 import type { Facets } from '../lib/types'
 import { toggle, type CatalogFilters } from './filters'
 
@@ -100,9 +99,8 @@ export function FilterPanel({ facets, filters, onChange }: { facets: Facets; fil
                 type="button"
                 aria-pressed={on}
                 onClick={() => onChange({ color: toggle(filters.color, c.name) })}
-                className={`flex items-center gap-2 border px-3 py-1.5 text-sm ${on ? 'border-ink' : 'border-sand-400 hover:border-ink'}`}
+                className={`border px-3 py-1.5 text-sm ${on ? 'border-ink bg-ink text-cream' : 'border-sand-400 hover:border-ink'}`}
               >
-                <span className="size-4 rounded-full ring-1 ring-sand-400" style={swatchStyle(c.name)} />
                 {c.name}
               </button>
             )

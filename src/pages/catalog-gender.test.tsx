@@ -37,15 +37,16 @@ describe("women's / men's shop", () => {
     expect(card).toHaveTextContent('Black/White')
   })
 
-  it('shows color dots linking to the other colors when an item has several', async () => {
+  it('says how many colors an item comes in, without color boxes', async () => {
     const swatches = [
       { slug: 'nike-air', color: 'Black', colorway: 'Black/White' },
       { slug: 'nike-air-red', color: 'Red', colorway: 'University Red' },
     ]
     mockApi({ 'GET /products/facets': { body: facets }, 'GET /products': { body: { ...page, items: [{ ...sampleProduct, swatches }] } } })
     renderRoute(<ProductListPage />, { path: '/shop', route: '/shop' })
-    const colors = await screen.findByRole('list', { name: 'Colors' })
-    expect(within(colors).getByRole('link', { name: 'University Red' })).toHaveAttribute('href', '/products/nike-air-red')
+    const card = (await screen.findByRole('heading', { name: 'Nike Club Hoodie' })).closest('article')!
+    expect(card).toHaveTextContent('Black/White · 2 colors')
+    expect(within(card).queryByRole('list', { name: 'Colors' })).toBeNull()
   })
 
   it('quick-adds a size from the card without opening the product', async () => {
@@ -64,8 +65,9 @@ describe('product detail', () => {
     renderRoute(<ProductDetailPage />, { path: '/products/:slug', route: '/products/nike-air' })
     expect(await screen.findByRole('heading', { level: 1, name: 'Nike Club Hoodie' })).toBeInTheDocument()
     expect(screen.getByText('Color:').parentElement).toHaveTextContent('Color: Black/White')
-    expect(screen.getByRole('link', { name: 'University Red, sold out' })).toHaveAttribute('href', '/products/nike-air-red')
-    expect(screen.getByRole('link', { name: 'Black/White' })).toHaveAttribute('aria-current', 'page')
+    const others = screen.getByRole('list', { name: 'Other colors' })
+    expect(within(others).getByRole('link', { name: 'University Red (sold out)' })).toHaveAttribute('href', '/products/nike-air-red')
+    expect(within(others).queryByRole('link', { name: 'Black/White' })).toBeNull()
     expect(screen.getByRole('link', { name: /Jane Doe, CC BY-SA 4.0/ })).toHaveAttribute('href', sampleProduct.imageSourceUrl)
     expect(screen.getByRole('link', { name: 'Men' })).toHaveAttribute('href', '/shop?gender=men')
   })

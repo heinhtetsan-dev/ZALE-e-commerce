@@ -1,6 +1,6 @@
-# LUNE — Front-End
+# ZALE — Front-End
 
-Responsive web storefront and admin back office for LUNE, a women's and men's fashion shop. It is built mobile-first, so it works in phone browsers as well as on desktop.
+Responsive web storefront and admin back office for ZALE, a women's and men's fashion shop. It is built mobile-first, so it works in phone browsers as well as on desktop.
 
 **Stack:** React 19, Vite, TypeScript, React Router, TanStack Query, Tailwind CSS 4, Zod, Stripe Elements.
 It talks to the back-end REST API (separate repository) described in `../PROJECT_SPEC.md`.
@@ -27,7 +27,7 @@ The back-end must be running and seeded (see its README). Demo accounts: `custom
 | `test` | Unit and component tests (Vitest + Testing Library, mocked API) |
 | `test:e2e` | Playwright end-to-end tests on desktop and Pixel 7 viewports, against the real API (needs the back-end running and seeded) |
 
-Run `npx playwright install chromium` once before the first `test:e2e`.
+Run `npx playwright install chromium` once before the first `test:e2e`. Tests that place orders register a throwaway shopper (`e2e-shopper-…@example.com`), so the demo customer's order history stays clean.
 
 ## Structure
 
