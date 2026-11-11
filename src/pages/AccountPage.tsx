@@ -80,11 +80,20 @@ function PasswordForm() {
 }
 
 export function AccountPage() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   if (!user) return null
   return (
     <div className="mx-auto max-w-3xl">
-      <PageTitle subtitle={`Member since ${formatDate(user.createdAt)}`}>My account</PageTitle>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <PageTitle subtitle={`Member since ${formatDate(user.createdAt)}`}>My account</PageTitle>
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={logout}
+        >
+          Log out
+        </button>
+      </div>
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
         <Link to="/account/orders" className="card flex items-center justify-between p-4 font-semibold hover:bg-stone-50">
           Order history <span aria-hidden>→</span>

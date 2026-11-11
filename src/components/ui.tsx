@@ -38,8 +38,8 @@ export function Notice({ tone = 'info', children }: { tone?: 'info' | 'success' 
 
 export function EmptyState({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="card flex flex-col items-center px-6 py-14 text-center">
-      <p className="text-lg font-semibold">{title}</p>
+    <div className="card flex flex-col items-center px-6 py-16 text-center">
+      <p className="display text-3xl">{title}</p>
       {children && <div className="mt-2 max-w-md text-sm text-stone-600">{children}</div>}
       {action && <div className="mt-6">{action}</div>}
     </div>
@@ -49,7 +49,7 @@ export function EmptyState({ title, children, action }: { title: string; childre
 export function PageTitle({ children, subtitle }: { children: ReactNode; subtitle?: ReactNode }) {
   return (
     <div className="mb-6">
-      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{children}</h1>
+      <h1 className="display text-4xl sm:text-5xl">{children}</h1>
       {subtitle && <p className="mt-1 text-sm text-stone-600">{subtitle}</p>}
     </div>
   )
@@ -58,7 +58,7 @@ export function PageTitle({ children, subtitle }: { children: ReactNode; subtitl
 const IMAGE_PLACEHOLDER =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#f5f5f4"/><g fill="none" stroke="#d6d3d1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M54 40a6 6 0 1 1 8 5.7c-1.4.5-2 1.4-2 2.8V52"/><path d="M60 52 24 74c-3 2-2 6 2 6h68c4 0 5-4 2-6z"/></g></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><g fill="none" stroke="#b8ad9c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M54 40a6 6 0 1 1 8 5.7c-1.4.5-2 1.4-2 2.8V52"/><path d="M60 52 24 74c-3 2-2 6 2 6h68c4 0 5-4 2-6z"/></g></svg>`,
   )
 
 export function ProductImage({ src, alt, className = '' }: { src: string | null; alt: string; className?: string }) {
@@ -70,7 +70,7 @@ export function ProductImage({ src, alt, className = '' }: { src: string | null;
       loading="lazy"
       decoding="async"
       onError={() => setFailed(true)}
-      className={`bg-stone-100 object-cover ${className}`}
+      className={`bg-sand-200 object-cover ${className}`}
     />
   )
 }

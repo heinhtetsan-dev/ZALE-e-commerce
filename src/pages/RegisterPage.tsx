@@ -42,7 +42,7 @@ export function RegisterPage() {
     <div className="mx-auto max-w-md">
       <div className="card p-6 sm:p-8">
         <h1 className="text-2xl font-bold">Create your account</h1>
-        <p className="mt-1 text-sm text-stone-600">Your cart will be saved to your account.</p>
+        <p className="mt-1 text-sm text-stone-600">Your bag will be saved to your account.</p>
         <form onSubmit={submit} noValidate className="mt-6 space-y-4">
           {formError && <ErrorBox title="Could not create account" message={formError} />}
           <FormField id="name" label="Name" autoComplete="name" value={values.name} error={errors.name} onChange={set('name')} />

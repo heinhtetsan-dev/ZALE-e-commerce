@@ -11,10 +11,10 @@ async function login(page: Page, who: { email: string; password: string }) {
   await expect(page).not.toHaveURL(/\/login$/)
 }
 
-async function logout(page: Page, isMobile: boolean) {
-  if (isMobile) await page.getByRole('button', { name: 'Open menu' }).click()
-  await page.getByRole('button', { name: 'Log out' }).last().click()
-  await expect(page.getByRole('banner').getByRole('link', { name: 'Log in' })).toBeVisible()
+async function logout(page: Page) {
+  await page.goto('/account')
+  await page.getByRole('main').getByRole('button', { name: 'Log out' }).click()
+  await expect(page).toHaveURL(/\/$/)
 }
 
 // Remove test products even if a test failed midway, so they never linger in the shop.
@@ -35,7 +35,7 @@ test('customers cannot open admin pages', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Admin' })).toHaveCount(0)
 })
 
-test('admin creates a product, stocks sizes, and fulfils an order', async ({ page, isMobile }) => {
+test('admin creates a product, stocks sizes, and fulfils an order', async ({ page }) => {
   const name = `E2E Tee ${Date.now()}`
 
   await login(page, ADMIN)
@@ -47,7 +47,7 @@ test('admin creates a product, stocks sizes, and fulfils an order', async ({ pag
   await page.getByRole('navigation', { name: 'Admin' }).getByRole('link', { name: 'Products' }).click()
   await page.getByRole('link', { name: '+ New product' }).click()
   await page.getByLabel('Name', { exact: true }).fill(name)
-  await page.getByLabel('Brand').selectOption({ label: 'Stride Essentials' })
+  await page.getByLabel('Brand').selectOption({ label: 'LUNE Essentials' })
   await page.getByLabel('Category').selectOption({ label: 'T-Shirts & Polos' })
   await page.getByLabel('Base color (for filters)').fill('Green')
   await page.getByLabel('Color name (as sold)').fill('Forest Green')
@@ -67,17 +67,17 @@ test('admin creates a product, stocks sizes, and fulfils an order', async ({ pag
   await page.getByRole('button', { name: 'Save stock' }).click()
   await expect(page.getByText('Stock updated.')).toBeVisible()
   await expect(page.getByText('3 items in stock')).toBeVisible()
-  await logout(page, isMobile)
+  await logout(page)
 
   // Customer buys the only size M
   await login(page, CUSTOMER)
-  await page.goto(`/?q=${encodeURIComponent(name)}`)
+  await page.goto(`/shop?q=${encodeURIComponent(name)}`)
   await page.locator('article a').first().click()
   await expect(page.getByText('$99.50')).toBeVisible()
   await page.getByRole('radio', { name: 'M', exact: true }).click()
   await expect(page.getByText('Only 1 left')).toBeVisible()
-  await page.getByRole('button', { name: 'Add to cart' }).click()
-  await expect(page.getByText(/Added .* to your cart/)).toBeVisible()
+  await page.getByRole('button', { name: 'Add to bag' }).click()
+  await expect(page.getByRole('dialog', { name: 'Shopping bag' }).getByText('Added to your bag')).toBeVisible()
   await page.goto('/checkout')
   await page.getByLabel('Full name').fill('Casey Customer')
   await page.getByLabel('Address', { exact: true }).fill('1 Test Street')
@@ -90,10 +90,10 @@ test('admin creates a product, stocks sizes, and fulfils an order', async ({ pag
   const orderNumber = (await page.getByText(/^Order #/).first().textContent())!.match(/#([A-Z0-9]+)/)![1]!
 
   // Size M is now sold out on the product page
-  await page.goto(`/?q=${encodeURIComponent(name)}`)
+  await page.goto(`/shop?q=${encodeURIComponent(name)}`)
   await page.locator('article a').first().click()
   await expect(page.getByRole('radio', { name: 'M', exact: true })).toBeDisabled()
-  await logout(page, isMobile)
+  await logout(page)
 
   // Admin ships and delivers
   await login(page, ADMIN)
@@ -108,7 +108,7 @@ test('admin creates a product, stocks sizes, and fulfils an order', async ({ pag
   // Stock was decremented at checkout: size M now shows 0 in the admin editor
   await page.goto('/admin/products')
   await page.getByRole('searchbox', { name: 'Search products' }).fill(name)
-  await page.getByRole('button', { name: 'Search', exact: true }).click()
+  await page.getByRole('main').getByRole('button', { name: 'Search', exact: true }).click()
   await page.getByRole('link', { name: new RegExp(name) }).click()
   await expect(page.getByLabel('Stock for size M', { exact: true })).toHaveValue('0')
   await expect(page.getByText('2 items in stock')).toBeVisible()

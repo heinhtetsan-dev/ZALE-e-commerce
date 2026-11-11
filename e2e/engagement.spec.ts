@@ -10,7 +10,7 @@ async function loginAsCustomer(page: Page) {
 
 test('wishlist: save from the detail page, view, and remove', async ({ page }) => {
   await loginAsCustomer(page)
-  await page.goto('/?q=barbour%20wax')
+  await page.goto('/shop?q=barbour%20wax')
   await page.locator('article a').first().click()
   await expect(page).toHaveURL(/\/products\//)
   const name = (await page.getByRole('heading', { level: 1 }).textContent())!.trim()
@@ -30,12 +30,13 @@ test('wishlist: save from the detail page, view, and remove', async ({ page }) =
 
 test('reviews: write, see the rating update, edit and delete', async ({ page }) => {
   await loginAsCustomer(page)
-  await page.goto('/?q=trucker')
+  await page.goto('/shop?q=trucker')
   await page.locator('article a').first().click()
   await expect(page).toHaveURL(/\/products\//)
   const reviews = page.locator('#reviews')
 
-  // Start clean if a previous run left a review behind.
+  // Start clean if a previous run left a review behind (wait until we know which it is).
+  await expect(reviews.getByRole('button', { name: /Write a review|Edit your review/ })).toBeVisible()
   if (await reviews.getByRole('button', { name: 'Edit your review' }).isVisible()) {
     await reviews.getByRole('button', { name: 'Edit your review' }).click()
     await reviews.getByRole('button', { name: 'Delete review' }).click()
@@ -47,12 +48,12 @@ test('reviews: write, see the rating update, edit and delete', async ({ page }) 
   await reviews.getByLabel('Your review (optional)').fill('True to size and very comfortable.')
   await reviews.getByRole('button', { name: 'Submit review' }).click()
   await expect(reviews.getByText('Classic look')).toBeVisible()
-  await expect(page.getByRole('link', { name: /5\.0 \(1 review\)/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: /5\.0 \(1\)/ })).toBeVisible()
 
   await reviews.getByRole('button', { name: 'Edit your review' }).click()
   await reviews.getByRole('radio', { name: '3 stars' }).click()
   await reviews.getByRole('button', { name: 'Update review' }).click()
-  await expect(page.getByRole('link', { name: /3\.0 \(1 review\)/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: /3\.0 \(1\)/ })).toBeVisible()
 
   await reviews.getByRole('button', { name: 'Edit your review' }).click()
   await reviews.getByRole('button', { name: 'Delete review' }).click()

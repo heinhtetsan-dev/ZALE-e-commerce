@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { vi } from 'vitest'
 import { AuthProvider } from '../auth/AuthContext'
+import { BagProvider } from '../cart/BagProvider'
 import { guestCart } from '../cart/guestCart'
 import type { ProductDetail, User } from '../lib/types'
 
@@ -52,7 +53,9 @@ export function renderRoute(element: ReactNode, { path = '/', route = '/', extra
     ...render(
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <RouterProvider router={router} />
+          <BagProvider>
+            <RouterProvider router={router} />
+          </BagProvider>
         </AuthProvider>
       </QueryClientProvider>,
     ),
@@ -88,6 +91,12 @@ export const sampleProduct: ProductDetail = {
   ratingAvg: 0,
   ratingCount: 0,
   availableSizes: ['M', 'L'],
+  sizes: [
+    { variantId: 'v41', size: 'S', stock: 0 },
+    { variantId: 'v42', size: 'M', stock: 2 },
+    { variantId: 'v43', size: 'L', stock: 9 },
+  ],
+  swatches: [],
   inStock: true,
   isActive: true,
   createdAt: '2026-01-01T00:00:00Z',

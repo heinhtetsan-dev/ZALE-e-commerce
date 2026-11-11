@@ -1,6 +1,8 @@
 const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
+const wholeCurrency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
-export const money = (cents: number) => currency.format(cents / 100)
+/** $98 for whole amounts, $79.50 otherwise. */
+export const money = (cents: number) => (cents % 100 === 0 ? wholeCurrency.format(cents / 100) : currency.format(cents / 100))
 
 export const formatSize = (size: string) => (size === 'One Size' ? size : `Size ${size}`)
 

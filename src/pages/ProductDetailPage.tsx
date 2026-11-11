@@ -1,31 +1,63 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useCallback, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { useCart } from '../cart/useCart'
+import { useAddToBag } from '../cart/useAddToBag'
+import { AccordionItem } from '../components/Accordion'
 import { ProductReviews } from '../components/ProductReviews'
-import { ErrorBox, Notice, ProductImage, Spinner, Stars } from '../components/ui'
+import { SizeGuideDialog } from '../components/SizeGuide'
+import { ErrorBox, ProductImage, Spinner, Stars } from '../components/ui'
 import { WishlistButton } from '../components/WishlistButton'
 import { api, ApiError, errorMessage } from '../lib/api'
-import { formatSize, genderLabel, money, stockLabel } from '../lib/format'
+import { swatchStyle } from '../lib/colors'
+import { money, stockLabel } from '../lib/format'
+import { careAdvice, deliveryPolicy, returnsPolicy } from '../lib/policies'
 import type { ProductDetail, Variant } from '../lib/types'
+
+const TILE_TONES = ['bg-sand-300', 'bg-sand-200', 'bg-sand-200', 'bg-sand-400']
+const audienceOf = (g: ProductDetail['gender']) => (g === 'MEN' ? 'men' : g === 'WOMEN' ? 'women' : null)
+
+function Gallery({ p }: { p: ProductDetail }) {
+  const images = p.images.length ? p.images : [null]
+  return (
+    <div>
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        {images.map((img, i) => (
+          <div key={img ?? i} className={`${TILE_TONES[i % TILE_TONES.length]} ${images.length === 1 ? 'col-span-2 aspect-4/5' : 'aspect-3/4'}`}>
+            <ProductImage src={img} alt={i === 0 ? `${p.name} in ${p.colorway ?? p.color}` : `${p.name}, view ${i + 1}`} className="size-full" />
+          </div>
+        ))}
+      </div>
+      {p.imageCredit && (
+        <p className="mt-2 text-xs text-taupe">
+          {p.imageSourceUrl ? (
+            <a href={p.imageSourceUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+              {p.imageCredit}
+            </a>
+          ) : (
+            p.imageCredit
+          )}
+        </p>
+      )}
+    </div>
+  )
+}
 
 export function ProductDetailPage() {
   const { slug = '' } = useParams()
-  const queryClient = useQueryClient()
   const product = useQuery({ queryKey: ['product', slug], queryFn: () => api<ProductDetail>(`/products/${slug}`) })
-  const { add } = useCart()
+  const { addToBag, isAdding } = useAddToBag()
   const [selected, setSelected] = useState<Variant | null>(null)
-  const [imageIndex, setImageIndex] = useState(0)
-  const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [sizeError, setSizeError] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
+  const closeGuide = useCallback(() => setGuideOpen(false), [])
 
-  // Switching colorway reuses this component: reset per-product selections.
+  // Switching color reuses this component: reset per-product selections.
   const [shownSlug, setShownSlug] = useState(slug)
   if (shownSlug !== slug) {
     setShownSlug(slug)
     setSelected(null)
-    setImageIndex(0)
-    setMessage(null)
+    setError(null)
     setSizeError(false)
   }
 
@@ -33,121 +65,71 @@ export function ProductDetailPage() {
   if (product.isError) {
     const notFound = product.error instanceof ApiError && product.error.status === 404
     return (
-      <ErrorBox
-        title={notFound ? 'Product not found' : 'Could not load this product'}
-        message={notFound ? 'It may have been removed. Browse the rest of the shop instead.' : errorMessage(product.error)}
-        onRetry={notFound ? undefined : () => product.refetch()}
-      />
+      <div className="mx-auto max-w-360 px-4 py-10 sm:px-8">
+        <ErrorBox
+          title={notFound ? 'Product not found' : 'Could not load this product'}
+          message={notFound ? 'It may have been removed. Browse the rest of the shop instead.' : errorMessage(product.error)}
+          onRetry={notFound ? undefined : () => product.refetch()}
+        />
+      </div>
     )
   }
 
   const p = product.data
-  const audience = p.gender === 'MEN' ? 'men' : p.gender === 'WOMEN' ? 'women' : null
+  const audience = audienceOf(p.gender)
   // Keep the selection in sync with fresh stock data after refetches.
   const current = selected ? (p.variants.find((v) => v.id === selected.id) ?? null) : null
   const inStockSizes = p.variants.filter((v) => v.stock > 0)
+  const otherSizes = inStockSizes.filter((v) => v.id !== current?.id)
 
   const handleAdd = async () => {
-    setMessage(null)
+    setError(null)
     if (!current) {
       setSizeError(true)
       return
     }
     try {
-      await add.mutateAsync({
+      await addToBag({
         variantId: current.id,
         quantity: 1,
         size: current.size,
         stock: current.stock,
-        product: { id: p.id, slug: p.slug, name: p.name, brand: p.brand.name, color: p.color, priceCents: p.priceCents, image: p.images[0] ?? null },
+        product: { id: p.id, slug: p.slug, name: p.name, brand: p.brand.name, color: p.colorway ?? p.color, priceCents: p.priceCents, image: p.images[0] ?? null },
       })
-      setMessage({ tone: 'success', text: `Added ${p.name} (${formatSize(current.size)}) to your cart.` })
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'OUT_OF_STOCK') {
-        // Stock changed since the page loaded: refresh the size grid.
-        await queryClient.invalidateQueries({ queryKey: ['product', slug] })
-      }
-      setMessage({ tone: 'error', text: errorMessage(err) })
+      setError(errorMessage(err))
     }
   }
 
   return (
-    <div>
-      <nav className="mb-4 text-sm text-stone-500" aria-label="Breadcrumb">
-        <Link to={audience ? `/?gender=${audience}` : '/'} className="hover:underline">
-          {audience === 'men' ? "Men's" : audience === 'women' ? "Women's" : 'Shop'}
-        </Link>{' '}
-        /{' '}
-        <Link to={`/?${audience ? `gender=${audience}&` : ''}category=${p.category.slug}`} className="hover:underline">
-          {p.category.name}
-        </Link>{' '}
-        / <span className="text-stone-900">{p.name}</span>
-      </nav>
+    <div className="mx-auto max-w-360 px-4 py-6 sm:px-8 sm:py-10">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(340px,440px)] lg:gap-14">
+        <Gallery p={p} />
 
-      <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
-        <div>
-          <div className="card overflow-hidden">
-            <ProductImage src={p.images[imageIndex] ?? null} alt={`${p.name} in ${p.colorway ?? p.color}`} className="aspect-square w-full" />
-          </div>
-          {p.imageCredit && (
-            <p className="mt-2 text-xs text-stone-500">
-              {p.imageSourceUrl ? (
-                <a href={p.imageSourceUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                  {p.imageCredit}
-                </a>
-              ) : (
-                p.imageCredit
-              )}
-            </p>
+        <div className="lg:sticky lg:top-28 lg:self-start">
+          <nav aria-label="Breadcrumb" className="eyebrow">
+            <Link to={audience ? `/shop?gender=${audience}` : '/shop'} className="hover:text-ink">
+              {audience === 'men' ? 'Men' : audience === 'women' ? 'Women' : 'Unisex'}
+            </Link>
+            <span aria-hidden> · </span>
+            <Link to={`/shop?${audience ? `gender=${audience}&` : ''}category=${p.category.slug}`} className="hover:text-ink">
+              {p.category.name}
+            </Link>
+          </nav>
+          <h1 className="display mt-3 text-4xl sm:text-5xl">{p.name}</h1>
+          <p className="mt-4 text-xl font-semibold">{money(p.priceCents)}</p>
+          {p.ratingCount > 0 && (
+            <a href="#reviews" className="mt-2 inline-flex items-center gap-2 text-xs text-taupe hover:text-ink">
+              <Stars value={p.ratingAvg} /> {p.ratingAvg.toFixed(1)} ({p.ratingCount})
+            </a>
           )}
-          {p.images.length > 1 && (
-            <div className="mt-3 flex gap-3">
-              {p.images.map((img, i) => (
-                <button
-                  key={img}
-                  type="button"
-                  onClick={() => setImageIndex(i)}
-                  aria-label={`Show image ${i + 1}`}
-                  className={`size-20 overflow-hidden rounded-lg border-2 ${i === imageIndex ? 'border-stone-900' : 'border-transparent'}`}
-                >
-                  <ProductImage src={img} alt="" className="size-full" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
 
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-            {p.brand.name} · {genderLabel(p.gender)}
-          </p>
-          <div className="mt-1 flex items-start gap-3">
-            <h1 className="flex-1 text-2xl font-bold tracking-tight sm:text-3xl">{p.name}</h1>
-            <WishlistButton productId={p.id} />
-          </div>
-          <div className="mt-2 flex items-center gap-2 text-sm text-stone-600">
-            {p.ratingCount > 0 ? (
-              <>
-                <Stars value={p.ratingAvg} />
-                <a href="#reviews" className="hover:underline">
-                  {p.ratingAvg.toFixed(1)} ({p.ratingCount} review{p.ratingCount === 1 ? '' : 's'})
-                </a>
-              </>
-            ) : (
-              <span>No reviews yet</span>
-            )}
-          </div>
-          <p className="mt-4 text-2xl font-bold">{money(p.priceCents)}</p>
-          <p className="mt-1 text-sm text-stone-600">
-            {genderLabel(p.gender)} · {p.category.name}
-          </p>
-
-          <div className="mt-6">
+          <div className="mt-8">
             <p className="text-sm">
-              <span className="font-semibold">Color:</span> {p.colorway ?? p.color}
+              Color: <span className="font-semibold">{p.colorway ?? p.color}</span>
             </p>
             {p.colorways.length > 1 && (
-              <ul className="mt-2 flex flex-wrap gap-2" aria-label="Other colors">
+              <ul className="mt-3 flex flex-wrap gap-3" aria-label="Other colors">
                 {p.colorways.map((c) => {
                   const isCurrent = c.slug === p.slug
                   return (
@@ -157,10 +139,9 @@ export function ProductDetailPage() {
                         aria-current={isCurrent ? 'page' : undefined}
                         title={`${c.colorway ?? c.color}${c.inStock ? '' : ' (sold out)'}`}
                         aria-label={`${c.colorway ?? c.color}${c.inStock ? '' : ', sold out'}`}
-                        className={`relative block size-16 overflow-hidden rounded-lg border-2 ${isCurrent ? 'border-stone-900' : 'border-stone-200 hover:border-stone-500'} ${c.inStock ? '' : 'opacity-50'}`}
-                      >
-                        <ProductImage src={c.image} alt="" className="size-full" />
-                      </Link>
+                        className={`block size-11 rounded-full border-[3px] border-cream ${isCurrent ? 'ring-2 ring-ink' : 'ring-1 ring-sand-400 hover:ring-ink'} ${c.inStock ? '' : 'opacity-50'}`}
+                        style={swatchStyle(c.color, c.colorway)}
+                      />
                     </li>
                   )
                 })}
@@ -168,15 +149,17 @@ export function ProductDetailPage() {
             )}
           </div>
 
-          <fieldset className="mt-6">
-            <legend className="mb-2 flex w-full items-center justify-between text-sm font-semibold">
-              <span>Select size{p.gender === 'UNISEX' ? ' (unisex)' : p.gender === 'MEN' ? " (men's)" : " (women's)"}</span>
-              {current && <span className={current.stockStatus === 'low_stock' ? 'text-amber-700' : 'text-emerald-700'}>{stockLabel(current.stock)}</span>}
-            </legend>
+          <fieldset className="mt-8">
+            <div className="mb-3 flex items-center justify-between">
+              <legend className="text-sm">Size</legend>
+              <button type="button" className="text-sm link-underline" onClick={() => setGuideOpen(true)}>
+                Size guide
+              </button>
+            </div>
             {p.variants.length === 0 ? (
-              <p className="text-sm text-stone-600">No sizes available.</p>
+              <p className="text-sm text-taupe">No sizes available.</p>
             ) : (
-              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Size">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-2.5" role="radiogroup" aria-label="Size">
                 {p.variants.map((v) => {
                   const out = v.stock === 0
                   const isSelected = current?.id === v.id
@@ -191,71 +174,78 @@ export function ProductDetailPage() {
                       onClick={() => {
                         setSelected(v)
                         setSizeError(false)
-                        setMessage(null)
+                        setError(null)
                       }}
-                      className={`relative min-w-14 rounded-lg border px-4 py-3 text-sm font-semibold transition ${
+                      className={`h-14 border text-sm transition ${
                         isSelected
-                          ? 'border-stone-900 bg-stone-900 text-white'
+                          ? 'border-ink bg-ink text-cream'
                           : out
-                            ? 'cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400 line-through'
-                            : 'border-stone-300 bg-white hover:border-stone-900'
+                            ? 'cursor-not-allowed border-dashed border-sand-400 text-taupe/60 line-through'
+                            : 'border-sand-400 hover:border-ink'
                       }`}
                     >
                       {v.size}
-                      {v.stockStatus === 'low_stock' && !isSelected && <span className="absolute right-1 top-1 size-1.5 rounded-full bg-amber-500" aria-hidden />}
                     </button>
                   )
                 })}
               </div>
             )}
-            <p className="mt-2 text-xs text-stone-500">
-              <span className="mr-1 inline-block size-1.5 rounded-full bg-amber-500 align-middle" /> Low stock · crossed out = sold out
+            <p className="mt-2 min-h-5 text-xs" aria-live="polite">
+              {sizeError ? (
+                <span className="text-red-700" role="alert">
+                  Please select a size first.
+                </span>
+              ) : current ? (
+                <span className={current.stockStatus === 'low_stock' ? 'text-amber-800' : 'text-taupe'}>{stockLabel(current.stock)}</span>
+              ) : null}
             </p>
-            {sizeError && (
-              <p className="mt-2 text-sm font-medium text-red-600" role="alert">
-                Please select a size first.
-              </p>
-            )}
           </fieldset>
 
           {inStockSizes.length === 0 && p.variants.length > 0 && (
-            <div className="mt-4">
-              <Notice tone="warning">This item is sold out in every size. Check back soon or browse similar styles.</Notice>
+            <p className="mb-3 text-sm text-taupe">Sold out in every size. Check back soon or explore similar styles.</p>
+          )}
+
+          <div className="flex gap-2">
+            <button type="button" className="btn-primary h-[54px] flex-1 text-sm tracking-[0.24em]" onClick={handleAdd} disabled={isAdding || inStockSizes.length === 0}>
+              {isAdding ? 'Adding…' : 'Add to bag'}
+            </button>
+            <WishlistButton productId={p.id} />
+          </div>
+
+          {error && (
+            <div className="mt-4 border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950" role="alert">
+              <p className="font-medium">{error}</p>
+              {otherSizes.length > 0 && <p className="mt-1">Available sizes: {otherSizes.map((v) => v.size).join(', ')}</p>}
             </div>
           )}
 
-          <button type="button" className="btn-accent mt-6 w-full py-3.5 text-base" onClick={handleAdd} disabled={add.isPending || inStockSizes.length === 0}>
-            {add.isPending ? 'Adding…' : 'Add to cart'}
-          </button>
-
-          {message && (
-            <div className="mt-4" role={message.tone === 'error' ? 'alert' : 'status'}>
-              {message.tone === 'success' ? (
-                <Notice tone="success">
-                  {message.text}{' '}
-                  <Link to="/cart" className="font-semibold underline">
-                    View cart
-                  </Link>
-                </Notice>
-              ) : (
-                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
-                  <p className="font-semibold">{message.text}</p>
-                  {inStockSizes.filter((v) => v.id !== current?.id).length > 0 && (
-                    <p className="mt-1">Available sizes: {inStockSizes.filter((v) => v.id !== current?.id).map((v) => v.size).join(', ')}</p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="mt-8 border-t border-stone-200 pt-6">
-            <h2 className="text-sm font-semibold">Description</h2>
-            <p className="mt-2 text-sm leading-relaxed text-stone-700">{p.description}</p>
+          <div className="mt-8 border-t border-sand-300">
+            <AccordionItem title="Description" defaultOpen>
+              <p>{p.description}</p>
+              <p className="mt-3 text-xs">
+                {p.brand.name} · {p.category.name}
+              </p>
+            </AccordionItem>
+            <AccordionItem title="Fabric & care">
+              {careAdvice.map((t) => (
+                <p key={t} className="mb-2 last:mb-0">
+                  {t}
+                </p>
+              ))}
+            </AccordionItem>
+            <AccordionItem title="Delivery & returns">
+              {[...deliveryPolicy, ...returnsPolicy].map((t) => (
+                <p key={t} className="mb-2 last:mb-0">
+                  {t}
+                </p>
+              ))}
+            </AccordionItem>
           </div>
         </div>
       </div>
 
       <ProductReviews productId={p.id} ratingAvg={p.ratingAvg} ratingCount={p.ratingCount} slug={p.slug} />
+      {guideOpen && <SizeGuideDialog onClose={closeGuide} />}
     </div>
   )
 }

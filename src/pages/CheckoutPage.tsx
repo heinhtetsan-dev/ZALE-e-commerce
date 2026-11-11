@@ -61,8 +61,8 @@ function CheckoutForm({ userName }: { userName: string }) {
 
   if (cart.lines.length === 0 && !placeOrder.isPending) {
     return (
-      <EmptyState title="Your cart is empty" action={<Link to="/" className="btn-primary">Continue shopping</Link>}>
-        Add something to your cart before checking out.
+      <EmptyState title="Your bag is empty" action={<Link to="/" className="btn-primary">Continue shopping</Link>}>
+        Add something to your bag before checking out.
       </EmptyState>
     )
   }

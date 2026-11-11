@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 const CUSTOMER = { email: 'customer@shoeshop.test', password: 'Customer123!' }
 
 async function openFirstInStockProduct(page: Page) {
-  await page.goto('/?sort=price_asc')
+  await page.goto('/shop?sort=price_asc')
   const card = page.locator('article').filter({ hasNot: page.getByText('Sold out') }).first()
   await card.locator('a').first().click()
   await expect(page.getByRole('radiogroup', { name: 'Size' })).toBeVisible()
@@ -16,16 +16,16 @@ async function login(page: Page) {
 }
 
 test('search, filter, sort and paginate the catalog', async ({ page, isMobile }) => {
-  await page.goto('/')
+  await page.goto('/shop')
   await expect(page.getByText(/\d+ results/)).toBeVisible()
 
   await page.getByRole('searchbox', { name: 'Search clothing' }).fill('levi')
-  await page.getByRole('button', { name: 'Search' }).click()
+  await page.getByRole('main').getByRole('button', { name: 'Search' }).click()
   await expect(page).toHaveURL(/q=levi/)
   await expect(page.locator('article')).toHaveCount(3)
   for (const text of await page.locator('article').allTextContents()) expect(text).toContain("Levi's")
 
-  await page.goto('/')
+  await page.goto('/shop')
   if (isMobile) await page.getByRole('button', { name: /^Filters/ }).click()
   const filters = isMobile ? page.getByRole('dialog', { name: 'Filters' }) : page.getByRole('complementary', { name: 'Filters' })
   await filters.getByLabel('Jackets & Coats').click()
@@ -37,8 +37,8 @@ test('search, filter, sort and paginate the catalog', async ({ page, isMobile })
   await expect(page.locator('article')).toHaveCount(4)
   for (const text of await page.locator('article').allTextContents()) expect(text).toMatch(/Black/)
 
-  await page.goto('/?sort=price_desc')
-  const prices = (await page.locator('article p.font-bold').allTextContents()).map((p) => Number(p.replace(/[$,]/g, '')))
+  await page.goto('/shop?sort=price_desc')
+  const prices = (await page.locator('article p.font-medium').allTextContents()).map((p) => Number(p.replace(/[$,]/g, '')))
   expect(prices).toEqual([...prices].sort((a, b) => b - a))
   await page.getByRole('button', { name: 'Next page' }).click()
   await expect(page).toHaveURL(/page=2/)
@@ -47,7 +47,7 @@ test('search, filter, sort and paginate the catalog', async ({ page, isMobile })
 
 test('filters keep the scroll position and there is no brand filter', async ({ page, isMobile }) => {
   test.skip(isMobile, 'Mobile filters live in a drawer; the page underneath does not scroll.')
-  await page.goto('/')
+  await page.goto('/shop')
   const filters = page.getByRole('complementary', { name: 'Filters' })
   await expect(filters.getByText('Category', { exact: true })).toBeVisible()
   await expect(filters.getByText('Brand', { exact: true })).toHaveCount(0)
@@ -63,21 +63,22 @@ test('filters keep the scroll position and there is no brand filter', async ({ p
   expect(Math.abs(after - before)).toBeLessThan(50)
 })
 
-test('guest cart requires a size, then checks out after login and shows in order history', async ({ page }) => {
+test('guest bag requires a size, opens the bag drawer, then checks out after login', async ({ page }) => {
   await openFirstInStockProduct(page)
   const name = (await page.getByRole('heading', { level: 1 }).textContent())!.trim()
 
-  await page.getByRole('button', { name: 'Add to cart' }).click()
+  await page.getByRole('button', { name: 'Add to bag' }).click()
   await expect(page.getByText('Please select a size first.')).toBeVisible()
 
   await page.getByRole('radiogroup', { name: 'Size' }).getByRole('radio').and(page.locator(':enabled')).first().click()
-  await page.getByRole('button', { name: 'Add to cart' }).click()
-  await expect(page.getByText(/Added .* to your cart/)).toBeVisible()
+  await page.getByRole('button', { name: 'Add to bag' }).click()
 
-  await page.getByRole('link', { name: /Cart, 1 items/ }).click()
-  await expect(page.getByRole('heading', { name: 'Your cart' })).toBeVisible()
-  await expect(page.getByText(name).first()).toBeVisible()
-  await page.getByRole('button', { name: 'Log in to checkout' }).click()
+  // Adding opens the bag drawer on the same page.
+  const bag = page.getByRole('dialog', { name: 'Shopping bag' })
+  await expect(bag.getByText('Added to your bag')).toBeVisible()
+  await expect(bag.getByText(name)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Bag, 1 items' })).toBeAttached()
+  await bag.getByRole('button', { name: 'Log in to checkout' }).click()
 
   await login(page)
   await expect(page).toHaveURL(/\/checkout$/)
@@ -104,7 +105,7 @@ test('guest cart requires a size, then checks out after login and shows in order
   await expect(page.getByText(name).first()).toBeVisible()
 })
 
-test('protected pages redirect to login and profile can be updated', async ({ page, isMobile }) => {
+test('protected pages redirect to login and profile can be updated', async ({ page }) => {
   await page.goto('/account')
   await expect(page).toHaveURL(/\/login$/)
   await login(page)
@@ -115,14 +116,31 @@ test('protected pages redirect to login and profile can be updated', async ({ pa
   await page.getByLabel('Name').fill('Casey Customer')
   await page.getByRole('button', { name: 'Save changes' }).click()
 
-  if (isMobile) await page.getByRole('button', { name: 'Open menu' }).click()
-  await page.getByRole('button', { name: 'Log out' }).last().click()
-  await expect(page.getByRole('banner').getByRole('link', { name: 'Log in' })).toBeVisible()
+  await page.getByRole('main').getByRole('button', { name: 'Log out' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  await page.goto('/account')
+  await expect(page).toHaveURL(/\/login$/)
+})
+
+test('quick add from a product card opens the bag drawer', async ({ page }) => {
+  await page.goto('/shop?category=accessories&sort=price_asc')
+  const card = page.locator('article').filter({ hasNot: page.getByText('Sold out') }).first()
+  const name = (await card.getByRole('heading', { level: 3 }).textContent())!.trim()
+  await card.hover()
+  const quick = card.getByRole('button', { name: /^(Quick add|Add to bag)$/ })
+  const label = await quick.textContent()
+  await quick.click()
+  if (label?.includes('Quick add')) await card.getByRole('button', { name: /^Add size/ }).first().click()
+  const bag = page.getByRole('dialog', { name: 'Shopping bag' })
+  await expect(bag.getByText('Added to your bag')).toBeVisible()
+  await expect(bag.getByText(name)).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(bag).toHaveCount(0)
 })
 
 test('layout is usable on narrow screens without horizontal scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 })
-  for (const path of ['/', '/cart', '/login']) {
+  for (const path of ['/', '/shop', '/products/levis-501-original-fit-jeans-medium-stonewash-mens', '/cart', '/login', '/help/size-guide']) {
     await page.goto(path)
     await page.waitForLoadState('networkidle')
     const overflow = await page.evaluate(() => {

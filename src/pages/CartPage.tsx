@@ -28,13 +28,13 @@ export function CartPage() {
   const navigate = useNavigate()
   const [lineError, setLineError] = useState<{ key: string; text: string } | null>(null)
 
-  if (isLoading) return <Spinner label="Loading your cart…" />
+  if (isLoading) return <Spinner label="Loading your bag…" />
   if (error) return <ErrorBox message={errorMessage(error)} onRetry={() => refetch()} />
 
   if (cart.lines.length === 0) {
     return (
       <EmptyState
-        title="Your cart is empty"
+        title="Your bag is empty"
         action={
           <Link to="/" className="btn-primary">
             Start shopping
@@ -59,7 +59,7 @@ export function CartPage() {
 
   return (
     <div>
-      <PageTitle subtitle={`${cart.itemCount} item${cart.itemCount === 1 ? '' : 's'}`}>Your cart</PageTitle>
+      <PageTitle subtitle={`${cart.itemCount} item${cart.itemCount === 1 ? '' : 's'}`}>Your bag</PageTitle>
       <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
         <ul className="space-y-3">
           {cart.lines.map((line) => {
@@ -115,7 +115,7 @@ export function CartPage() {
               {user ? 'Checkout' : 'Log in to checkout'}
             </button>
             {hasIssues && <p className="mt-2 text-center text-xs text-amber-700">Fix the highlighted items to continue.</p>}
-            <p className="mt-3 text-center text-xs text-stone-500">Items in your cart are not reserved until you place your order.</p>
+            <p className="mt-3 text-center text-xs text-stone-500">Items in your bag are not reserved until you place your order.</p>
           </OrderSummary>
         </div>
       </div>

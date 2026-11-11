@@ -42,6 +42,10 @@ export interface ProductCard {
   ratingAvg: number
   ratingCount: number
   availableSizes: string[]
+  /** All sizes with stock, for quick add from a card. */
+  sizes: Array<{ variantId: string; size: string; stock: number }>
+  /** Other colors of the same item (empty when there's only one). */
+  swatches: Array<{ slug: string; color: string; colorway: string | null }>
   inStock: boolean
   isActive: boolean
   createdAt: string

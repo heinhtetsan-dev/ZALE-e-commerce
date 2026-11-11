@@ -1,27 +1,12 @@
 import { useState, type ReactNode } from 'react'
+import { swatchStyle } from '../lib/colors'
 import type { Facets } from '../lib/types'
 import { toggle, type CatalogFilters } from './filters'
 
-const COLOR_SWATCH: Record<string, string> = {
-  black: '#1c1917',
-  white: '#ffffff',
-  grey: '#a8a29e',
-  gray: '#a8a29e',
-  red: '#dc2626',
-  blue: '#2563eb',
-  green: '#16a34a',
-  brown: '#92400e',
-  pink: '#ec4899',
-  beige: '#e7d8c0',
-  yellow: '#eab308',
-  orange: '#f97316',
-  purple: '#9333ea',
-}
-
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <fieldset className="border-b border-stone-200 py-5 first:pt-0">
-      <legend className="mb-3 text-sm font-semibold">{title}</legend>
+    <fieldset className="border-b border-sand-300 py-5 first:pt-0">
+      <legend className="eyebrow mb-3 text-ink">{title}</legend>
       {children}
     </fieldset>
   )
@@ -33,9 +18,9 @@ function CheckList({ options, selected, onToggle }: { options: Array<{ value: st
       {options.map((o) => (
         <li key={o.value}>
           <label className="flex cursor-pointer items-center gap-3 rounded-md py-1.5 text-sm">
-            <input type="checkbox" className="size-4 accent-stone-900" checked={selected.includes(o.value)} onChange={() => onToggle(o.value)} />
+            <input type="checkbox" className="size-4 accent-ink" checked={selected.includes(o.value)} onChange={() => onToggle(o.value)} />
             <span className="flex-1">{o.label}</span>
-            <span className="text-xs text-stone-400">{o.count}</span>
+            <span className="text-xs text-taupe">{o.count}</span>
           </label>
         </li>
       ))}
@@ -65,7 +50,7 @@ function PriceForm({ facets, filters, onChange }: { facets: Facets; filters: Cat
         <span className="sr-only">Minimum price</span>
         <input className="input" inputMode="decimal" placeholder={`Min ${Math.floor(facets.price.min / 100)}`} value={minPrice} onChange={(e) => setMinPrice(e.target.value)} />
       </label>
-      <span className="pb-2.5 text-stone-400">–</span>
+      <span className="pb-2.5 text-taupe">–</span>
       <label className="flex-1">
         <span className="sr-only">Maximum price</span>
         <input className="input" inputMode="decimal" placeholder={`Max ${Math.ceil(facets.price.max / 100)}`} value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
@@ -97,7 +82,7 @@ export function FilterPanel({ facets, filters, onChange }: { facets: Facets; fil
                 type="button"
                 aria-pressed={on}
                 onClick={() => onChange({ size: toggle(filters.size, s) })}
-                className={`min-w-12 rounded-lg border px-3 py-2 text-sm font-medium ${on ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-300 bg-white hover:border-stone-900'}`}
+                className={`min-w-12 border px-3 py-2 text-sm ${on ? 'border-ink bg-ink text-cream' : 'border-sand-400 hover:border-ink'}`}
               >
                 {s}
               </button>
@@ -115,9 +100,9 @@ export function FilterPanel({ facets, filters, onChange }: { facets: Facets; fil
                 type="button"
                 aria-pressed={on}
                 onClick={() => onChange({ color: toggle(filters.color, c.name) })}
-                className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm ${on ? 'border-stone-900 ring-1 ring-stone-900' : 'border-stone-300 hover:border-stone-900'}`}
+                className={`flex items-center gap-2 border px-3 py-1.5 text-sm ${on ? 'border-ink' : 'border-sand-400 hover:border-ink'}`}
               >
-                <span className="size-4 rounded-full border border-stone-300" style={{ background: COLOR_SWATCH[c.name.toLowerCase()] ?? '#d6d3d1' }} />
+                <span className="size-4 rounded-full ring-1 ring-sand-400" style={swatchStyle(c.name)} />
                 {c.name}
               </button>
             )

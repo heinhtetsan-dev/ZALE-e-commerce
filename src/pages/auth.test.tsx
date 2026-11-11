@@ -99,6 +99,6 @@ describe('OrdersPage', () => {
     expect(await screen.findByText('Order #ABCD1234')).toBeInTheDocument()
     expect(screen.getByText('Shipped')).toBeInTheDocument()
     expect(screen.getByText('Paid')).toBeInTheDocument()
-    expect(screen.getByText('$128.00')).toBeInTheDocument()
+    expect(screen.getByText('$128')).toBeInTheDocument()
   })
 })

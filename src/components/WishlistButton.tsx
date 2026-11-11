@@ -25,9 +25,9 @@ export function WishlistButton({ productId, compact = false }: { productId: stri
       aria-pressed={saved}
       aria-label={saved ? 'Remove from wishlist' : 'Save to wishlist'}
       title={saved ? 'Remove from wishlist' : 'Save to wishlist'}
-      className={`grid place-items-center rounded-full transition ${compact ? 'size-9 bg-white/90 shadow-sm backdrop-blur hover:bg-white' : 'size-11 border border-stone-300 bg-white hover:border-stone-900'} ${saved ? 'text-red-600' : 'text-stone-700'}`}
+      className={`grid place-items-center transition ${compact ? 'size-9 rounded-full bg-cream/95 hover:bg-cream' : 'size-[54px] border border-sand-400 hover:border-ink'} text-ink`}
     >
-      <HeartIcon filled={saved} className={compact ? 'size-5' : 'size-6'} />
+      <HeartIcon filled={saved} className={compact ? 'size-[18px]' : 'size-5'} />
     </button>
   )
 }
