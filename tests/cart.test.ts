@@ -40,12 +40,12 @@ describe("cart", () => {
 
   it("rejects quantities above stock with alternatives", async () => {
     const { token } = await createCustomer();
-    const p = await createProduct({ variants: [{ size: 41, stock: 0 }, { size: 42, stock: 2 }, { size: 43, stock: 7 }] });
+    const p = await createProduct({ variants: [{ size: "S", stock: 0 }, { size: "M", stock: 2 }, { size: "L", stock: 7 }] });
     const res = await api().post("/api/v1/cart/items").set(auth(token)).send({ variantId: p.variants[0]!.id, quantity: 1 });
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe("OUT_OF_STOCK");
-    expect(res.body.error.message).toMatch(/size 41 is sold out/);
-    expect(res.body.error.details.items[0].alternatives.map((a: { size: number }) => a.size)).toEqual([42, 43]);
+    expect(res.body.error.message).toMatch(/size S is sold out/);
+    expect(res.body.error.details.items[0].alternatives.map((a: { size: string }) => a.size)).toEqual(["M", "L"]);
 
     const tooMany = await api().post("/api/v1/cart/items").set(auth(token)).send({ variantId: p.variants[1]!.id, quantity: 3 });
     expect(tooMany.status).toBe(409);
@@ -64,7 +64,7 @@ describe("cart", () => {
 
   it("merges a guest cart, capping by stock and skipping sold-out sizes", async () => {
     const { token } = await createCustomer();
-    const p = await createProduct({ variants: [{ size: 40, stock: 3 }, { size: 41, stock: 0 }, { size: 42, stock: 20 }] });
+    const p = await createProduct({ variants: [{ size: "S", stock: 3 }, { size: "M", stock: 0 }, { size: "L", stock: 20 }] });
     await api().post("/api/v1/cart/items").set(auth(token)).send({ variantId: p.variants[2]!.id, quantity: 4 });
     const res = await api()
       .post("/api/v1/cart/merge")
@@ -77,7 +77,7 @@ describe("cart", () => {
         ],
       });
     expect(res.status).toBe(200);
-    const bySize = Object.fromEntries(res.body.items.map((i: { variant: { size: number }; quantity: number }) => [i.variant.size, i.quantity]));
-    expect(bySize).toEqual({ 40: 3, 42: 10 });
+    const bySize = Object.fromEntries(res.body.items.map((i: { variant: { size: string }; quantity: number }) => [i.variant.size, i.quantity]));
+    expect(bySize).toEqual({ S: 3, L: 10 });
   });
 });

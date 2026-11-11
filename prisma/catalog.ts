@@ -1,138 +1,317 @@
 /**
- * Demo catalog of real shoe models and colorways (educational use).
- * Prices are typical US retail prices. Images come from Wikimedia Commons
- * (see catalog-images.ts) and carry the attribution their licenses require.
+ * Demo fashion catalog for educational use. Branded items are real products
+ * whose photos show that brand; generic items use the shop's own label
+ * "Stride Essentials" so no brand is claimed that the photo doesn't show.
+ * Prices are typical retail prices in USD cents. Photos come from Wikimedia
+ * Commons (see catalog-images.ts) with the attribution their licenses require.
  */
 export type Gender = "MEN" | "WOMEN" | "UNISEX";
+
+export type SizeRun = "menTops" | "womenTops" | "unisexTops" | "menWaist" | "womenWaist" | "letters" | "capFit" | "oneSize";
+
+export const sizeRuns: Record<SizeRun, string[]> = {
+  menTops: ["S", "M", "L", "XL", "XXL"],
+  womenTops: ["XS", "S", "M", "L", "XL"],
+  unisexTops: ["XS", "S", "M", "L", "XL", "XXL"],
+  menWaist: ["28", "30", "31", "32", "33", "34", "36", "38"],
+  womenWaist: ["24", "25", "26", "27", "28", "29", "30", "31", "32"],
+  letters: ["S", "M", "L", "XL"],
+  capFit: ["S/M", "M/L", "L/XL"],
+  oneSize: ["One Size"],
+};
+
+export const brands = [
+  "Stride Essentials",
+  "Levi's",
+  "Polo Ralph Lauren",
+  "Lacoste",
+  "Fred Perry",
+  "Barbour",
+  "Carhartt",
+  "Schott NYC",
+  "Adidas",
+  "The North Face",
+  "Nike",
+  "7 For All Mankind",
+  "New Era",
+  "Ray-Ban",
+  "Randers Handsker",
+  "HiMountain",
+];
+
+export const categories = [
+  "T-Shirts & Polos",
+  "Shirts & Blouses",
+  "Hoodies & Sweatshirts",
+  "Knitwear",
+  "Jackets & Coats",
+  "Jeans",
+  "Trousers",
+  "Dresses",
+  "Skirts",
+  "Activewear",
+  "Accessories",
+];
 
 export interface CatalogProduct {
   brand: string;
   model: string;
+  /** Color name as sold, e.g. "Medium Stonewash". */
   colorway: string;
   /** Base color used by the color filter. */
   color: string;
   gender: Gender;
   category: string;
   price: number;
+  sizes: SizeRun;
+  /** Keys into commonsImages (contact-sheet numbers). */
   images: number[];
-  /** Model key: products sharing it are colorways of each other. */
+  /** Products sharing a group are colors of the same item. */
   group: string;
+  description: string;
 }
 
-export const brands = ["Nike", "Jordan", "Adidas", "New Balance", "Converse", "Vans", "Asics", "Puma", "Dr. Martens", "Timberland", "UGG", "Birkenstock"];
-export const categories = ["Lifestyle", "Running", "Basketball", "Skate", "Boots", "Sandals"];
+export const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 
-export const descriptions: Record<string, string> = {
-  "air-force-1":
-    "Introduced in 1982 as Nike's first basketball shoe with Air cushioning, the Air Force 1 moved from the hardwood to the street and never left. Full-grain leather upper, perforated toe box for breathability, encapsulated Air unit in the heel and the classic pivot-circle rubber outsole.",
-  "air-max-90":
-    "Originally released in 1990 as the Air Max III, the Air Max 90 is known for its visible heel Air unit, waffle outsole and layered upper of leather, synthetics and mesh. Bold color blocking and a padded collar make it an everyday classic.",
-  "air-max-270":
-    "The Air Max 270 has Nike's tallest heel Air unit at its debut (32 mm), giving a soft, bouncy ride. A stretchy knit and mesh upper with a sock-like fit and a lightweight foam midsole keep it comfortable from morning to night.",
-  cortez:
-    "Designed by Bill Bowerman and released in 1972, the Cortez was one of Nike's first running shoes. Its herringbone outsole, foam midsole wedge and leather upper with the oversized Swoosh give it an instantly recognisable retro profile.",
-  blazer:
-    "First made for basketball in 1977, the Blazer Mid '77 Vintage keeps the original look: leather upper, exposed foam on the tongue, a vintage-tinted midsole and a vulcanised rubber sole with excellent board feel.",
-  pegasus:
-    "The Pegasus is Nike's long-running daily trainer. Responsive foam with a forefoot Zoom Air unit, a breathable engineered mesh upper and a durable rubber outsole make it a dependable shoe for easy runs, tempo days and everything in between.",
-  dunk:
-    "Born on college basketball courts in 1985 with team-inspired color blocking, the Dunk Low is now a skate and street staple. Leather overlays, a padded low-cut collar and a grippy cupsole with a pivot point.",
-  "air-max-1":
-    "The 1987 Air Max 1 was the first Nike shoe to show its Air unit through a window in the midsole, an idea inspired by the Centre Pompidou in Paris. Mesh, suede and leather upper with a cushioned, stable ride.",
-  "air-max-plus":
-    "Recognisable by its wavy TPU 'fingers' inspired by palm trees, the Air Max Plus (Tuned Air) pairs targeted Air units with a supportive midfoot shank for a cushioned, stable feel.",
-  "air-jordan-1":
-    "The shoe that started the Jordan line in 1985. The Air Jordan 1 Retro High OG features a premium leather upper, padded high-top collar, Nike Air cushioning in the heel and the Wings logo on the ankle.",
-  "air-jordan-2":
-    "Made in Italy for its 1986 debut, the Air Jordan 2 swapped the Swoosh for a clean leather upper with faux-lizard overlays. A full-length Air sole and padded collar give it a luxurious, comfortable feel.",
-  samba:
-    "Created in 1950 for training on icy pitches, the Samba became an icon of terrace culture and streetwear. Soft leather upper, suede T-toe overlay, the three serrated stripes and a grippy gum rubber outsole.",
-  superstar:
-    "The shell-toe Superstar was a basketball shoe in 1969 before Run-DMC made it a hip-hop symbol. Leather upper, rubber shell toe for protection and a herringbone-pattern cupsole.",
-  "stan-smith":
-    "Named after the American tennis champion, the Stan Smith is a minimalist leather court shoe with perforated 3-Stripes, a colored heel tab and a comfortable cupsole. Clean enough to go with anything.",
-  gazelle:
-    "A training and indoor football shoe from 1966, the Gazelle has a soft suede upper, contrast serrated 3-Stripes and a slim profile that suits everyday outfits.",
-  ultraboost:
-    "Ultraboost combines responsive Boost cushioning that returns energy with every stride, a supportive Primeknit upper and a flexible Continental rubber outsole for grip in wet and dry conditions.",
-  "nb-574":
-    "The 574 was built in 1988 as a reliable running shoe for every surface. Suede and mesh upper, ENCAP midsole for cushioning with durable support and a classic, versatile shape.",
-  "nb-550":
-    "Revived from New Balance's 1989 basketball archives, the 550 is a leather low-top with a perforated toe, padded collar and retro cupsole outsole.",
-  "nb-990":
-    "The 990 is New Balance's flagship 'Made in USA' running shoe. Pigskin suede and mesh upper, ENCAP midsole technology and a premium, cushioned ride that is built to last.",
-  "chuck-taylor":
-    "The canvas basketball shoe that became a cultural icon. Chuck Taylor All Star High Tops have a durable canvas upper, OrthoLite insole for comfort, the ankle patch and a vulcanised rubber sole.",
-  "chuck-70":
-    "Chuck 70 recreates the 1970s All Star with heavier-grade canvas, extra cushioning, a higher glossy egret midsole, vintage stitching and a premium heel patch.",
-  "vans-authentic":
-    "The original Vans shoe from 1966. A low-profile canvas lace-up with metal eyelets, a padded collar and the signature waffle rubber outsole for board grip.",
-  "gel-kayano":
-    "The Gel-Kayano is ASICS' stability running shoe. GEL technology cushions impact, while a supportive structure keeps the foot aligned on long runs.",
-  "gel-1130":
-    "Inspired by a 2008 running model, the Gel-1130 brings Y2K style back with layered mesh and synthetic overlays, GEL cushioning in the heel and a supportive TRUSSTIC system.",
-  "gel-nyc":
-    "The Gel-NYC fuses elements of the Gel-Nimbus 3, Gel-MC Plus V and Gel-Cumulus 16 into one retro runner, with GEL cushioning and a multi-layered mesh and leather upper.",
-  "gel-cumulus":
-    "A neutral everyday trainer with soft FLYTEFOAM cushioning, rearfoot GEL for impact absorption and an engineered mesh upper that adapts to the foot.",
-  "dm-1460":
-    "Dr. Martens' original 8-eye boot was first made on 1 April 1960. Smooth leather upper, yellow welt stitching, grooved sides, a heel loop and the bouncing AirWair sole that resists oil and fat.",
-  "timberland-6-inch":
-    "The Timberland Premium 6-Inch boot, introduced in 1973, is built from waterproof nubuck leather with seam-sealed construction, a padded collar, PrimaLoft insulation and a rugged lug outsole.",
-  "ugg-classic":
-    "The Classic Short II is made from twin-face sheepskin with a natural wool lining that keeps feet warm while wicking moisture. A treated upper resists water and stains, and the light, flexible Treadlite sole adds cushioning.",
-  "birkenstock-arizona":
-    "The two-strap Arizona sandal has Birkenstock's contoured cork-latex footbed with a deep heel cup and arch support that molds to your foot over time. Birko-Flor upper with adjustable pin buckles.",
-  "puma-suede":
-    "Launched in 1968, the PUMA Suede has been worn by athletes, b-boys and skaters for decades. A soft suede upper, the Formstrip on the side and a sturdy rubber cupsole.",
-};
+export const productSlug = (c: CatalogProduct) =>
+  slugify(`${c.brand} ${c.model} ${c.colorway} ${c.gender === "UNISEX" ? "" : c.gender === "MEN" ? "mens" : "womens"}`);
+
+const E = "Stride Essentials";
 
 export const catalog: CatalogProduct[] = [
-  { brand: "Nike", model: "Air Force 1 '07", colorway: "White/White", color: "White", gender: "UNISEX", category: "Lifestyle", price: 11500, images: [0, 2], group: "air-force-1" },
-  { brand: "Nike", model: "Air Force 1 '07 LV8", colorway: "Flax/Wheat-Gum Light Brown", color: "Brown", gender: "MEN", category: "Lifestyle", price: 13000, images: [1], group: "air-force-1" },
-  { brand: "Nike", model: "Air Max 90", colorway: "White/Black-Cool Grey-Infrared", color: "White", gender: "MEN", category: "Lifestyle", price: 14000, images: [3], group: "air-max-90" },
-  { brand: "Nike", model: "Air Max 90", colorway: "White/Obsidian", color: "White", gender: "WOMEN", category: "Lifestyle", price: 13500, images: [4], group: "air-max-90" },
-  { brand: "Nike", model: "Air Max 270", colorway: "Black/Dusty Cactus-White", color: "Black", gender: "WOMEN", category: "Lifestyle", price: 16000, images: [5], group: "air-max-270" },
-  { brand: "Nike", model: "Air Max 270", colorway: "Summit White/Lilac-Sail", color: "White", gender: "WOMEN", category: "Lifestyle", price: 16000, images: [6], group: "air-max-270" },
-  { brand: "Nike", model: "Cortez", colorway: "White/Black", color: "White", gender: "WOMEN", category: "Lifestyle", price: 9000, images: [7], group: "cortez" },
-  { brand: "Nike", model: "Blazer Mid '77 Vintage", colorway: "White/Midnight Navy-Sail", color: "White", gender: "WOMEN", category: "Skate", price: 10500, images: [8], group: "blazer" },
-  { brand: "Nike", model: "Air Zoom Pegasus 38", colorway: "Platinum Tint/Black-Pink Blast", color: "Grey", gender: "MEN", category: "Running", price: 12000, images: [9], group: "pegasus" },
-  { brand: "Nike", model: "Dunk Low Retro", colorway: "White/Black (Panda)", color: "Black", gender: "UNISEX", category: "Skate", price: 11500, images: [10], group: "dunk" },
-  { brand: "Nike", model: "Dunk Low Retro", colorway: "White/Varsity Green", color: "Green", gender: "MEN", category: "Skate", price: 11500, images: [11], group: "dunk" },
-  { brand: "Nike", model: "Air Max 1", colorway: "White/University Red-Neutral Grey", color: "Red", gender: "MEN", category: "Lifestyle", price: 15000, images: [12], group: "air-max-1" },
-  { brand: "Nike", model: "Air Max Plus", colorway: "Black/Black-Black", color: "Black", gender: "MEN", category: "Running", price: 18500, images: [13], group: "air-max-plus" },
-  { brand: "Jordan", model: "Air Jordan 1 Retro High OG", colorway: "Black/Varsity Red-White (Bred)", color: "Red", gender: "MEN", category: "Basketball", price: 18000, images: [14], group: "air-jordan-1" },
-  { brand: "Jordan", model: "Air Jordan 2 Retro", colorway: "White/Varsity Red-Black (Chicago)", color: "White", gender: "MEN", category: "Basketball", price: 20000, images: [15], group: "air-jordan-2" },
-  { brand: "Adidas", model: "Samba OG", colorway: "Cloud White/Core Black/Gum", color: "White", gender: "UNISEX", category: "Lifestyle", price: 10000, images: [16], group: "samba" },
-  { brand: "Adidas", model: "Samba Classic", colorway: "Core Black/Cloud White", color: "Black", gender: "MEN", category: "Lifestyle", price: 9000, images: [17], group: "samba" },
-  { brand: "Adidas", model: "Superstar", colorway: "Cloud White/Core Black", color: "White", gender: "UNISEX", category: "Lifestyle", price: 10000, images: [18], group: "superstar" },
-  { brand: "Adidas", model: "Stan Smith", colorway: "Cloud White/Green", color: "White", gender: "UNISEX", category: "Lifestyle", price: 10000, images: [19], group: "stan-smith" },
-  { brand: "Adidas", model: "Gazelle", colorway: "Mesa/Cloud White/Gum", color: "Yellow", gender: "UNISEX", category: "Lifestyle", price: 10000, images: [20], group: "gazelle" },
-  { brand: "Adidas", model: "Gazelle", colorway: "Semi Pink Spark/Cloud White", color: "Pink", gender: "WOMEN", category: "Lifestyle", price: 10000, images: [21], group: "gazelle" },
-  { brand: "Adidas", model: "Ultraboost 4.0 DNA", colorway: "Core Black/Core Black", color: "Black", gender: "MEN", category: "Running", price: 19000, images: [22], group: "ultraboost" },
-  { brand: "New Balance", model: "574 Core", colorway: "Incense/Sandstone", color: "Beige", gender: "UNISEX", category: "Lifestyle", price: 9000, images: [23], group: "nb-574" },
-  { brand: "New Balance", model: "550", colorway: "White/Burgundy", color: "White", gender: "UNISEX", category: "Basketball", price: 11000, images: [24], group: "nb-550" },
-  { brand: "New Balance", model: "990v3 Made in USA", colorway: "Grey/Pink", color: "Grey", gender: "WOMEN", category: "Running", price: 18500, images: [25], group: "nb-990" },
-  { brand: "Converse", model: "Chuck Taylor All Star High Top", colorway: "Navy", color: "Blue", gender: "UNISEX", category: "Lifestyle", price: 6500, images: [26], group: "chuck-taylor" },
-  { brand: "Converse", model: "Chuck 70 High Top", colorway: "Black/Egret/Black", color: "Black", gender: "UNISEX", category: "Lifestyle", price: 9000, images: [27], group: "chuck-70" },
-  { brand: "Vans", model: "Authentic", colorway: "Black/True White", color: "Black", gender: "UNISEX", category: "Skate", price: 6000, images: [29, 30], group: "vans-authentic" },
-  { brand: "Asics", model: "Gel-Kayano 26", colorway: "Laser Pink/Sour Yuzu", color: "Pink", gender: "WOMEN", category: "Running", price: 16000, images: [31], group: "gel-kayano" },
-  { brand: "Asics", model: "Gel-1130", colorway: "White/Pure Gold", color: "White", gender: "UNISEX", category: "Lifestyle", price: 11000, images: [32], group: "gel-1130" },
-  { brand: "Asics", model: "Gel-NYC", colorway: "White/Steel Grey", color: "Grey", gender: "MEN", category: "Lifestyle", price: 14000, images: [33], group: "gel-nyc" },
-  { brand: "Asics", model: "Gel-Cumulus 22", colorway: "Black/Directoire Blue", color: "Blue", gender: "MEN", category: "Running", price: 12000, images: [34], group: "gel-cumulus" },
-  { brand: "Dr. Martens", model: "1460 Smooth Leather Lace Up Boots", colorway: "Cherry Red", color: "Red", gender: "UNISEX", category: "Boots", price: 17000, images: [35], group: "dm-1460" },
-  { brand: "Dr. Martens", model: "1460 Crazy Horse Leather Boots", colorway: "Dark Brown", color: "Brown", gender: "MEN", category: "Boots", price: 18000, images: [36], group: "dm-1460" },
-  { brand: "Timberland", model: "Premium 6-Inch Waterproof Boot", colorway: "Wheat Nubuck", color: "Brown", gender: "MEN", category: "Boots", price: 20000, images: [37], group: "timberland-6-inch" },
-  { brand: "Timberland", model: "Premium 6-Inch Waterproof Boot", colorway: "Light Grey Nubuck", color: "Grey", gender: "WOMEN", category: "Boots", price: 19000, images: [38], group: "timberland-6-inch" },
-  { brand: "UGG", model: "Classic Short II", colorway: "Sand", color: "Beige", gender: "WOMEN", category: "Boots", price: 17000, images: [39], group: "ugg-classic" },
-  { brand: "Birkenstock", model: "Arizona Birko-Flor", colorway: "Black", color: "Black", gender: "UNISEX", category: "Sandals", price: 11000, images: [40], group: "birkenstock-arizona" },
-  { brand: "Puma", model: "Suede Classic XXI", colorway: "Burgundy/White", color: "Red", gender: "UNISEX", category: "Lifestyle", price: 7500, images: [42], group: "puma-suede" },
-  { brand: "Puma", model: "Suede Classic XXI", colorway: "Black/White", color: "Black", gender: "UNISEX", category: "Lifestyle", price: 7500, images: [43], group: "puma-suede" },
-];
+  // ------------------------------------------------------------------ men
+  {
+    brand: "Levi's", model: "501 Original Fit Jeans", colorway: "Medium Stonewash", color: "Blue", gender: "MEN", category: "Jeans", price: 7950, sizes: "menWaist", images: [1], group: "levis-501",
+    description: "The original button-fly jean, made by Levi's since the 1870s. Straight leg, regular fit through the seat and thigh, 100% cotton denim and the Red Tab on the back pocket.",
+  },
+  {
+    brand: "Levi's", model: "501 Original Fit Jeans", colorway: "Light Indigo Destructed", color: "Blue", gender: "MEN", category: "Jeans", price: 8950, sizes: "menWaist", images: [0], group: "levis-501",
+    description: "The classic 501 in a light, broken-in wash with rips and repairs at the knees for a lived-in look. Button fly, straight leg and rigid cotton denim that softens with every wear.",
+  },
+  {
+    brand: "Levi's", model: "Trucker Jacket", colorway: "Medium Stonewash", color: "Blue", gender: "MEN", category: "Jackets & Coats", price: 9800, sizes: "menTops", images: [2, 3], group: "levis-trucker",
+    description: "The denim jacket Levi's introduced in 1967: pointed chest-pocket flaps, V-seams down the front and adjustable waist tabs. Layers over a tee in summer and under a coat in winter.",
+  },
+  {
+    brand: "Polo Ralph Lauren", model: "Stadium Print Short-Sleeve Shirt", colorway: "Multi Print", color: "Multicolor", gender: "MEN", category: "Shirts & Blouses", price: 14800, sizes: "menTops", images: [4], group: "rl-stadium",
+    description: "Inspired by Ralph Lauren's 1992 Stadium collection, this relaxed camp-collar shirt is covered in a bold sporting print. Lightweight cotton with a straight hem made to be worn untucked.",
+  },
+  {
+    brand: "Polo Ralph Lauren", model: "Classic Fit Madras Shirt", colorway: "Blue Madras Plaid", color: "Blue", gender: "MEN", category: "Shirts & Blouses", price: 12500, sizes: "menTops", images: [5], group: "rl-madras",
+    description: "A summer staple woven from breathable madras cotton in a multicolored plaid, with a button-down collar and the embroidered Pony on the chest.",
+  },
+  {
+    brand: "Lacoste", model: "Original L.12.12 Polo", colorway: "Light Blue", color: "Blue", gender: "MEN", category: "T-Shirts & Polos", price: 11000, sizes: "menTops", images: [7], group: "lacoste-l1212",
+    description: "René Lacoste's 1933 design that created the polo shirt as we know it. Breathable cotton petit piqué, ribbed collar, two-button placket and the green crocodile on the chest.",
+  },
+  {
+    brand: "Lacoste", model: "Striped Cotton Polo", colorway: "Yellow/Blue Stripe", color: "Yellow", gender: "MEN", category: "T-Shirts & Polos", price: 12000, sizes: "menTops", images: [8], group: "lacoste-stripe",
+    description: "A cheerful striped take on the classic Lacoste polo in soft cotton jersey, with a ribbed collar and the crocodile badge.",
+  },
+  {
+    brand: "Fred Perry", model: "M12 Twin Tipped Polo", colorway: "White/Navy/Red", color: "White", gender: "MEN", category: "T-Shirts & Polos", price: 9500, sizes: "menTops", images: [11], group: "fred-perry-m12",
+    description: "The polo Fred Perry launched in 1952, still made in England. Cotton piqué with twin-tipped collar and cuffs and the embroidered Laurel Wreath.",
+  },
+  {
+    brand: "Fred Perry", model: "M12 Twin Tipped Polo", colorway: "Black", color: "Black", gender: "MEN", category: "T-Shirts & Polos", price: 9500, sizes: "menTops", images: [10], group: "fred-perry-m12",
+    description: "The iconic M12 in black with contrast tipping on the collar and cuffs. Durable cotton piqué and a regular fit that keeps its shape.",
+  },
+  {
+    brand: "Barbour", model: "Endurance Wax Jacket", colorway: "Olive", color: "Green", gender: "MEN", category: "Jackets & Coats", price: 34900, sizes: "menTops", images: [14, 12], group: "barbour-wax",
+    description: "Barbour has made waxed cotton jackets in South Shields since 1894. Water-resistant waxed cotton outer, corduroy-trimmed collar, studded storm fly and roomy bellows pockets. Can be re-waxed to last for decades.",
+  },
+  {
+    brand: "Carhartt", model: "Duck Detroit Jacket", colorway: "Gravel", color: "Grey", gender: "MEN", category: "Jackets & Coats", price: 18000, sizes: "menTops", images: [15], group: "carhartt-detroit",
+    description: "A workwear classic from 1954: heavyweight cotton duck, corduroy collar, blanket-lined body and adjustable waist tabs. Built to take hard wear and look better with age.",
+  },
+  {
+    brand: "Carhartt", model: "Duck Active Hooded Jacket", colorway: "Carhartt Brown", color: "Brown", gender: "MEN", category: "Jackets & Coats", price: 12000, sizes: "menTops", images: [16], group: "carhartt-active",
+    description: "Firm-hand cotton duck with a quilted lining and attached hood. Triple-stitched seams, rib-knit cuffs and the square Carhartt label.",
+  },
+  {
+    brand: "Schott NYC", model: "613 One Star Perfecto Leather Jacket", colorway: "Black", color: "Black", gender: "MEN", category: "Jackets & Coats", price: 105000, sizes: "menTops", images: [17, 18], group: "schott-613",
+    description: "Schott made the first Perfecto motorcycle jacket in 1928, and the 613 'One Star' became the 1950s icon. Heavy steerhide leather, asymmetric zip, belted waist and star studs on the epaulettes.",
+  },
+  {
+    brand: E, model: "MA-1 Bomber Jacket", colorway: "Petrol Blue", color: "Blue", gender: "MEN", category: "Jackets & Coats", price: 8900, sizes: "menTops", images: [19], group: "ma1",
+    description: "Modelled on the 1950s flight jacket: smooth nylon shell, light padding, rib-knit collar, cuffs and hem, and a utility pocket on the sleeve.",
+  },
+  {
+    brand: E, model: "Slim Fit Chinos", colorway: "Stone", color: "Beige", gender: "MEN", category: "Trousers", price: 5900, sizes: "menWaist", images: [21, 22], group: "chinos",
+    description: "Everyday cotton twill chinos with a little stretch, a slim tapered leg and slant pockets. Smart enough for the office, easy enough for the weekend.",
+  },
+  {
+    brand: E, model: "Cargo Trousers", colorway: "Olive", color: "Green", gender: "MEN", category: "Trousers", price: 6900, sizes: "menWaist", images: [39], group: "cargo",
+    description: "Relaxed-fit cotton ripstop trousers with bellows cargo pockets and a straight leg, inspired by military field trousers.",
+  },
+  {
+    brand: E, model: "Brushed Flannel Shirt", colorway: "Teal/Rust Check", color: "Blue", gender: "MEN", category: "Shirts & Blouses", price: 4900, sizes: "menTops", images: [23, 24], group: "flannel",
+    description: "Soft brushed cotton flannel in a bold check, with two chest pockets and a regular fit for layering over a tee.",
+  },
+  {
+    brand: E, model: "Aloha Camp Shirt", colorway: "Blue Palm Print", color: "Blue", gender: "MEN", category: "Shirts & Blouses", price: 4500, sizes: "menTops", images: [36], group: "aloha",
+    description: "A breezy Hawaiian-style shirt with a camp collar and an all-over palm print. Lightweight viscose that drapes well in hot weather.",
+  },
+  {
+    brand: E, model: "Aloha Camp Shirt", colorway: "White Palm Print", color: "White", gender: "MEN", category: "Shirts & Blouses", price: 4500, sizes: "menTops", images: [37], group: "aloha",
+    description: "Our camp-collar Aloha shirt on a white ground with grey palms: holiday-ready and easy to style with chinos or shorts.",
+  },
+  {
+    brand: "Polo Ralph Lauren", model: "Southwestern Print Down Jacket", colorway: "Navy Multi", color: "Blue", gender: "MEN", category: "Jackets & Coats", price: 49800, sizes: "menTops", images: [29], group: "rl-down",
+    description: "A warm down-filled jacket with a striking Southwestern-inspired pattern, ribbed trims and a full-zip front.",
+  },
+  {
+    brand: "Adidas", model: "Helionic Down Jacket", colorway: "Black", color: "Black", gender: "MEN", category: "Jackets & Coats", price: 18000, sizes: "menTops", images: [30], group: "adidas-helionic",
+    description: "A lightweight, packable puffer with responsibly sourced down insulation, a water-repellent shell and the 3-Stripes on the shoulders.",
+  },
+  {
+    brand: "The North Face", model: "Mountain Light Triclimate Jacket", colorway: "TNF Black", color: "Black", gender: "MEN", category: "Jackets & Coats", price: 37000, sizes: "menTops", images: [31], group: "tnf-triclimate",
+    description: "A 3-in-1 system: a waterproof, breathable GORE-TEX shell and a zip-in insulated jacket that can each be worn on their own. Built for changeable mountain weather.",
+  },
+  {
+    brand: "Polo Ralph Lauren", model: "Color-Block Windbreaker", colorway: "Green/Red/Navy", color: "Green", gender: "MEN", category: "Jackets & Coats", price: 19800, sizes: "menTops", images: [34], group: "rl-windbreaker",
+    description: "A retro sporting windbreaker in bold color blocks with a stowaway hood, half-zip pullover style and an elastic hem.",
+  },
+  {
+    brand: E, model: "Track Jacket", colorway: "Black/Gold", color: "Black", gender: "MEN", category: "Activewear", price: 6500, sizes: "menTops", images: [41], group: "track-jacket",
+    description: "A smooth tricot track top with a contrast chest panel, stand-up collar and full zip, for training days and off-duty looks.",
+  },
+  {
+    brand: "Randers Handsker", model: "Lined Leather Gloves", colorway: "Black", color: "Black", gender: "MEN", category: "Accessories", price: 9500, sizes: "letters", images: [103], group: "randers-gloves",
+    description: "Made by Randers Handsker, a Danish glovemaker founded in 1811. Soft lamb leather with a warm lining and a close, natural fit.",
+  },
+  {
+    brand: E, model: "Bi-Fold Leather Wallet", colorway: "Dark Navy", color: "Blue", gender: "MEN", category: "Accessories", price: 3900, sizes: "oneSize", images: [100], group: "wallet",
+    description: "A slim bi-fold in full-grain leather with six card slots and a full-length note compartment.",
+  },
 
-/** EU size runs per audience. */
-export const sizeRuns: Record<Gender, number[]> = {
-  MEN: [39, 40, 40.5, 41, 42, 42.5, 43, 44, 44.5, 45, 46, 47],
-  WOMEN: [35.5, 36, 36.5, 37.5, 38, 38.5, 39, 40, 40.5, 41],
-  UNISEX: [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46],
-};
+  // ---------------------------------------------------------------- women
+  {
+    brand: E, model: "Breton Stripe Top", colorway: "Ecru/Navy Stripe", color: "Blue", gender: "WOMEN", category: "T-Shirts & Polos", price: 4500, sizes: "womenTops", images: [57, 55], group: "breton",
+    description: "The French sailor stripe, adopted by the French Navy in 1858 and by Parisian style ever since. Heavyweight cotton jersey with a boat neck and long sleeves.",
+  },
+  {
+    brand: E, model: "Pintuck Cotton Blouse", colorway: "Ivory", color: "White", gender: "WOMEN", category: "Shirts & Blouses", price: 5900, sizes: "womenTops", images: [71], group: "blouse",
+    description: "A romantic vintage-inspired blouse in fine cotton with delicate pintuck detailing across the front and a soft collar.",
+  },
+  {
+    brand: E, model: "Cashmere Crew Neck Sweater", colorway: "Grey Melange", color: "Grey", gender: "WOMEN", category: "Knitwear", price: 14900, sizes: "womenTops", images: [58], group: "cashmere",
+    description: "Pure, soft cashmere in a relaxed crew-neck shape with ribbed trims. Light enough to layer and warm enough to wear on its own.",
+  },
+  {
+    brand: E, model: "Button-Front Cardigan", colorway: "Scarlet", color: "Red", gender: "WOMEN", category: "Knitwear", price: 6900, sizes: "womenTops", images: [59], group: "cardigan",
+    description: "A fine-knit V-neck cardigan in a vivid red with a full button front. Throw it over a dress or wear it buttoned as a top.",
+  },
+  {
+    brand: E, model: "Pleated Little Black Dress", colorway: "Black", color: "Black", gender: "WOMEN", category: "Dresses", price: 12900, sizes: "womenTops", images: [50], group: "lbd",
+    description: "A timeless sleeveless dress in fine wool with a fitted bodice and a softly pleated skirt that moves as you walk.",
+  },
+  {
+    brand: E, model: "Flowing Maxi Dress", colorway: "Electric Blue", color: "Blue", gender: "WOMEN", category: "Dresses", price: 8900, sizes: "womenTops", images: [51], group: "maxi",
+    description: "A floor-length jersey dress in a saturated electric blue, with a scoop neck and a fluid skirt. Pairs well with tan accessories.",
+  },
+  {
+    brand: E, model: "Ribbed Knit Midi Dress", colorway: "Burgundy", color: "Red", gender: "WOMEN", category: "Dresses", price: 7900, sizes: "womenTops", images: [76], group: "knit-dress",
+    description: "A body-skimming midi dress in stretchy rib knit with long sleeves and a high neck. Cosy for autumn with tights and boots.",
+  },
+  {
+    brand: E, model: "Knitted Maxi Dress", colorway: "Mustard", color: "Yellow", gender: "WOMEN", category: "Dresses", price: 8900, sizes: "womenTops", images: [77], group: "knit-maxi",
+    description: "A long, soft-knit dress in warm mustard with a crew neck and a gently fitted silhouette.",
+  },
+  {
+    brand: E, model: "Pleated Mini Skirt", colorway: "Black", color: "Black", gender: "WOMEN", category: "Skirts", price: 4900, sizes: "womenTops", images: [63], group: "pleated-skirt",
+    description: "A swingy mini skirt with crisp knife pleats and a comfortable waistband. Wear it with opaque tights and a chunky knit.",
+  },
+  {
+    brand: "7 For All Mankind", model: "Denim Pencil Skirt", colorway: "Dark Indigo", color: "Blue", gender: "WOMEN", category: "Skirts", price: 16800, sizes: "womenWaist", images: [64], group: "7fam-skirt",
+    description: "A knee-length pencil skirt in premium dark denim from the Los Angeles denim label, with five-pocket styling and a back vent.",
+  },
+  {
+    brand: E, model: "High-Rise Mom Jeans", colorway: "Light Wash", color: "Blue", gender: "WOMEN", category: "Jeans", price: 6900, sizes: "womenWaist", images: [73], group: "mom-jeans",
+    description: "A '90s favourite: high waist, relaxed hips and a tapered leg in rigid cotton denim with a light vintage wash.",
+  },
+  {
+    brand: "Nike", model: "Swoosh Medium-Support Sports Bra", colorway: "Black/White", color: "Black", gender: "WOMEN", category: "Activewear", price: 3500, sizes: "womenTops", images: [66], group: "nike-swoosh-bra",
+    description: "A racerback sports bra with medium support for gym and studio workouts. Sweat-wicking Dri-FIT fabric and removable pads.",
+  },
+  {
+    brand: E, model: "Classic Belted Trench Coat", colorway: "Stone", color: "Beige", gender: "WOMEN", category: "Jackets & Coats", price: 15900, sizes: "womenTops", images: [68], group: "trench",
+    description: "The trench coat born in the First World War: water-repellent cotton gabardine, double-breasted front, storm flap, epaulettes and a tie belt.",
+  },
+  {
+    brand: E, model: "Houndstooth Wool Coat", colorway: "Black/White", color: "Black", gender: "WOMEN", category: "Jackets & Coats", price: 19900, sizes: "womenTops", images: [78], group: "houndstooth",
+    description: "A longline coat in a classic houndstooth wool blend with notch lapels and a single-breasted front.",
+  },
+  {
+    brand: E, model: "Leather Saddle Bag", colorway: "Tan", color: "Brown", gender: "WOMEN", category: "Accessories", price: 12900, sizes: "oneSize", images: [80], group: "saddle-bag",
+    description: "A structured crossbody bag in vegetable-tanned leather with a front flap, buckle fastening and an adjustable strap.",
+  },
+  {
+    brand: E, model: "Printed Silk Scarf", colorway: "Paisley Multi", color: "Multicolor", gender: "WOMEN", category: "Accessories", price: 5900, sizes: "oneSize", images: [102], group: "silk-scarf",
+    description: "A generously sized silk scarf with a rich paisley print. Wear it at the neck, in your hair or tied to a bag.",
+  },
+
+  // --------------------------------------------------------------- unisex
+  {
+    brand: E, model: "Heavyweight Graphic Hoodie", colorway: "Black", color: "Black", gender: "UNISEX", category: "Hoodies & Sweatshirts", price: 5500, sizes: "unisexTops", images: [26], group: "hoodie",
+    description: "A substantial brushed-back fleece hoodie with a tonal chest graphic, lined hood, kangaroo pocket and ribbed cuffs. Relaxed fit.",
+  },
+  {
+    brand: E, model: "Packable Windbreaker", colorway: "Stone", color: "Beige", gender: "UNISEX", category: "Jackets & Coats", price: 6900, sizes: "unisexTops", images: [35], group: "windbreaker",
+    description: "A featherweight wind- and shower-resistant jacket with a roll-away hood that packs into its own pocket.",
+  },
+  {
+    brand: "New Era", model: "Atlanta Braves 59FIFTY Cap", colorway: "Black/Red", color: "Black", gender: "UNISEX", category: "Accessories", price: 4200, sizes: "capFit", images: [83], group: "new-era-braves",
+    description: "New Era's structured six-panel cap, worn on the field since 1954, with a flat visor and the Braves logo embroidered in 3D.",
+  },
+  {
+    brand: "Ray-Ban", model: "New Wayfarer Sunglasses", colorway: "Black/Blue Gradient", color: "Black", gender: "UNISEX", category: "Accessories", price: 17300, sizes: "oneSize", images: [86], group: "rayban-new-wayfarer",
+    description: "A slightly smaller, softer take on the 1952 Wayfarer. Acetate frame with gradient lenses that give full UV protection.",
+  },
+  {
+    brand: E, model: "Metal Aviator Sunglasses", colorway: "Gold/Red", color: "Yellow", gender: "UNISEX", category: "Accessories", price: 4900, sizes: "oneSize", images: [88], group: "aviators",
+    description: "A classic teardrop aviator with a thin gold metal frame and tinted lenses with UV400 protection.",
+  },
+  {
+    brand: "Polo Ralph Lauren", model: "Striped Cuff Beanie", colorway: "Navy/Cream", color: "Blue", gender: "UNISEX", category: "Accessories", price: 4950, sizes: "oneSize", images: [90], group: "rl-beanie",
+    description: "A ribbed knit beanie with a turned-up cuff, a contrast stripe and the Polo branding.",
+  },
+  {
+    brand: E, model: "Crochet Beanie", colorway: "Cobalt", color: "Blue", gender: "UNISEX", category: "Accessories", price: 2500, sizes: "oneSize", images: [89], group: "crochet-beanie",
+    description: "A handmade-look crochet beanie in bright cobalt blue with a slouchy fit.",
+  },
+  {
+    brand: "Barbour", model: "Waxed Cotton Bucket Hat", colorway: "Black", color: "Black", gender: "UNISEX", category: "Accessories", price: 4900, sizes: "letters", images: [96], group: "barbour-bucket",
+    description: "Barbour's weatherproof waxed cotton made into a bucket hat with a tartan lining. Keeps the rain off in style.",
+  },
+  {
+    brand: "Polo Ralph Lauren", model: "Reversible Bucket Hat", colorway: "Red/Navy", color: "Red", gender: "UNISEX", category: "Accessories", price: 6800, sizes: "letters", images: [97], group: "rl-bucket",
+    description: "A cotton twill bucket hat that reverses from red to navy, finished with an embroidered Pony.",
+  },
+  {
+    brand: E, model: "Paisley Bucket Hat", colorway: "Brown Paisley", color: "Brown", gender: "UNISEX", category: "Accessories", price: 2900, sizes: "oneSize", images: [95], group: "paisley-bucket",
+    description: "A soft cotton bucket hat with an all-over retro paisley print.",
+  },
+  {
+    brand: E, model: "Leather Belt", colorway: "Brown", color: "Brown", gender: "UNISEX", category: "Accessories", price: 3900, sizes: "letters", images: [93], group: "belt",
+    description: "A 35 mm full-grain leather belt with a brushed-steel roller buckle. Made to be worn with jeans and chinos.",
+  },
+  {
+    brand: E, model: "Canvas Tote Bag", colorway: "Navy/Natural", color: "Blue", gender: "UNISEX", category: "Accessories", price: 2900, sizes: "oneSize", images: [94], group: "tote",
+    description: "A sturdy two-tone cotton canvas tote with long handles and room for a laptop, groceries or a beach towel.",
+  },
+  {
+    brand: E, model: "Check Wool Scarf", colorway: "Camel/Black/Red Check", color: "Beige", gender: "UNISEX", category: "Accessories", price: 4500, sizes: "oneSize", images: [81], group: "check-scarf",
+    description: "A soft brushed-wool scarf in a heritage check with fringed ends.",
+  },
+  {
+    brand: "HiMountain", model: "Hiker 50L Backpack", colorway: "Blue/Black", color: "Blue", gender: "UNISEX", category: "Accessories", price: 8900, sizes: "oneSize", images: [99], group: "himountain-hiker",
+    description: "A 50-litre trekking pack from the Polish outdoor brand, with an adjustable back system, hip belt, side pockets and a rain cover.",
+  },
+];

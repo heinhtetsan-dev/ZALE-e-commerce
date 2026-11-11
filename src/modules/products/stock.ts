@@ -1,15 +1,15 @@
 import { prisma } from "../../lib/prisma.js";
-import { toNumber } from "./product.serializer.js";
+import { bySize } from "./product.serializer.js";
 
 export interface StockShortage {
   variantId: string;
   productId: string;
   productName: string;
   productSlug: string;
-  size: number;
+  size: string;
   requested: number;
   available: number;
-  alternatives: Array<{ variantId: string; size: number; stock: number }>;
+  alternatives: Array<{ variantId: string; size: string; stock: number }>;
 }
 
 /**
@@ -25,7 +25,7 @@ export async function describeShortages(lines: Array<{ variantId: string; reques
           id: true,
           name: true,
           slug: true,
-          variants: { where: { stock: { gt: 0 } }, select: { id: true, size: true, stock: true }, orderBy: { size: "asc" } },
+          variants: { where: { stock: { gt: 0 } }, select: { id: true, size: true, stock: true } },
         },
       },
     },
@@ -39,12 +39,12 @@ export async function describeShortages(lines: Array<{ variantId: string; reques
         productId: v.product.id,
         productName: v.product.name,
         productSlug: v.product.slug,
-        size: toNumber(v.size),
+        size: v.size,
         requested: line.requested,
         available: v.stock,
-        alternatives: v.product.variants
+        alternatives: bySize(v.product.variants)
           .filter((alt) => alt.id !== v.id)
-          .map((alt) => ({ variantId: alt.id, size: toNumber(alt.size), stock: alt.stock })),
+          .map((alt) => ({ variantId: alt.id, size: alt.size, stock: alt.stock })),
       },
     ];
   });

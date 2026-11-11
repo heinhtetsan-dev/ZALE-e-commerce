@@ -4,9 +4,9 @@ import { api, createProduct, resetDb } from "./helpers.js";
 
 beforeAll(async () => {
   await resetDb();
-  await createProduct({ name: "Road Runner", brand: "Nike", category: "Running", color: "Red", priceCents: 12000, variants: [{ size: 42, stock: 3 }, { size: 43, stock: 0 }] });
-  await createProduct({ name: "Court King", brand: "Adidas", category: "Basketball", color: "White", priceCents: 9000, variants: [{ size: 43, stock: 8 }] });
-  await createProduct({ name: "Trail Boss", brand: "Nike", category: "Boots", color: "Brown", priceCents: 15000, variants: [{ size: 44.5, stock: 1 }] });
+  await createProduct({ name: "Road Runner", brand: "Nike", category: "Running", color: "Red", priceCents: 12000, variants: [{ size: "L", stock: 0 }, { size: "M", stock: 3 }] });
+  await createProduct({ name: "Court King", brand: "Adidas", category: "Basketball", color: "White", priceCents: 9000, variants: [{ size: "L", stock: 8 }] });
+  await createProduct({ name: "Trail Boss", brand: "Nike", category: "Boots", color: "Brown", priceCents: 15000, variants: [{ size: "32", stock: 1 }] });
   await createProduct({ name: "Hidden Shoe", brand: "Nike", isActive: false });
 });
 
@@ -41,9 +41,9 @@ describe("GET /products", () => {
   });
 
   it("filters by size only when that size is in stock", async () => {
-    const res = await api().get("/api/v1/products?size=43");
+    const res = await api().get("/api/v1/products?size=L");
     expect(res.body.items.map((p: { name: string }) => p.name)).toEqual(["Court King"]);
-    expect((await api().get("/api/v1/products?size=44.5")).body.total).toBe(1);
+    expect((await api().get("/api/v1/products?size=32")).body.total).toBe(1);
   });
 
   it("sorts by price descending", async () => {
@@ -69,7 +69,7 @@ describe("GET /products/facets", () => {
     const res = await api().get("/api/v1/products/facets");
     expect(res.status).toBe(200);
     expect(res.body.brands.map((b: { slug: string }) => b.slug)).toEqual(["adidas", "nike"]);
-    expect(res.body.sizes).toEqual([42, 43, 44.5]);
+    expect(res.body.sizes).toEqual(["M", "L", "32"]);
     expect(res.body.price).toEqual({ min: 9000, max: 15000 });
   });
 });
@@ -80,8 +80,8 @@ describe("GET /products/:slug", () => {
     const res = await api().get(`/api/v1/products/${list.body.items[0].slug}`);
     expect(res.status).toBe(200);
     expect(res.body.variants).toEqual([
-      expect.objectContaining({ size: 42, stock: 3, stockStatus: "low_stock" }),
-      expect.objectContaining({ size: 43, stock: 0, stockStatus: "out_of_stock" }),
+      expect.objectContaining({ size: "M", stock: 3, stockStatus: "low_stock" }),
+      expect.objectContaining({ size: "L", stock: 0, stockStatus: "out_of_stock" }),
     ]);
   });
 

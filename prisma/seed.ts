@@ -2,17 +2,10 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client.js";
-import { brands, catalog, categories, descriptions, sizeRuns } from "./catalog.js";
+import { brands, catalog, categories, productSlug, sizeRuns, slugify } from "./catalog.js";
 import { commonsImages } from "./catalog-images.js";
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL!, options: "-c TimeZone=UTC" }) });
-
-const slugify = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/['’]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
 
 // Deterministic PRNG so stock levels are reproducible.
 let seed = 42;
@@ -20,8 +13,6 @@ const rand = () => {
   seed = (seed * 1664525 + 1013904223) % 4294967296;
   return seed / 4294967296;
 };
-
-const genderLabel = { MEN: "Men's", WOMEN: "Women's", UNISEX: "Unisex" } as const;
 
 async function main() {
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "Admin123!";
@@ -52,12 +43,15 @@ async function main() {
   let created = 0;
   let updated = 0;
   for (const [i, item] of catalog.entries()) {
-    const name = `${item.brand} ${item.model}`;
-    const slug = slugify(`${name} ${item.colorway} ${item.gender === "UNISEX" ? "" : item.gender}`);
-    const images = item.images.map((n) => commonsImages[n]!);
+    const slug = productSlug(item);
+    const images = item.images.map((n) => {
+      const img = commonsImages[n];
+      if (!img) throw new Error(`Unknown image #${n} for ${slug}`);
+      return img;
+    });
     const data = {
-      name,
-      description: descriptions[item.group] ?? `${genderLabel[item.gender]} ${item.model}.`,
+      name: `${item.brand} ${item.model}`,
+      description: item.description,
       brandId: brandIds.get(item.brand)!,
       categoryId: categoryIds.get(item.category)!,
       color: item.color,
@@ -78,6 +72,7 @@ async function main() {
       updated++;
       continue;
     }
+    const run = sizeRuns[item.sizes];
     await prisma.product.create({
       data: {
         ...data,
@@ -85,11 +80,12 @@ async function main() {
         // Stagger createdAt so "newest" sorting is meaningful.
         createdAt: new Date(Date.now() - i * 86_400_000),
         variants: {
-          create: sizeRuns[item.gender]
-            .filter(() => rand() > 0.12)
+          create: run
+            // Keep every size of short runs (e.g. One Size); drop a few from long ones.
+            .filter(() => run.length <= 3 || rand() > 0.1)
             .map((size) => {
               const r = rand();
-              return { size, stock: r < 0.12 ? 0 : r < 0.27 ? 1 + Math.floor(rand() * 3) : 5 + Math.floor(rand() * 20) };
+              return { size, stock: r < 0.1 ? 0 : r < 0.25 ? 1 + Math.floor(rand() * 3) : 5 + Math.floor(rand() * 25) };
             }),
         },
       },
@@ -97,10 +93,11 @@ async function main() {
     created++;
   }
 
-  const keep = new Set(catalog.map((c) => slugify(`${c.brand} ${c.model} ${c.colorway} ${c.gender === "UNISEX" ? "" : c.gender}`)));
-  const retired = await prisma.product.updateMany({ where: { slug: { notIn: [...keep] }, isActive: true, styleGroup: null }, data: { isActive: false } });
+  // Anything not in the current catalog is hidden from the shop (never hard-deleted: orders may reference it).
+  const keep = catalog.map(productSlug);
+  const retired = await prisma.product.updateMany({ where: { slug: { notIn: keep }, isActive: true }, data: { isActive: false } });
 
-  console.log(`Seed complete: ${created} created, ${updated} refreshed, ${retired.count} legacy products hidden.`);
+  console.log(`Seed complete: ${created} created, ${updated} refreshed, ${retired.count} products no longer in the catalog hidden.`);
   console.log(`Admin: admin@shoeshop.test / ${adminPassword}`);
   console.log(`Customer: customer@shoeshop.test / ${customerPassword}`);
 }

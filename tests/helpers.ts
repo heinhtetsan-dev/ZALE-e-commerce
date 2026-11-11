@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import request from "supertest";
 import { createApp } from "../src/app.js";
 import { prisma } from "../src/lib/prisma.js";
+import { bySize } from "../src/modules/products/product.serializer.js";
 
 export const app = createApp();
 export const api = () => request(app);
@@ -54,7 +55,7 @@ export async function createProduct(opts: {
   gender?: "MEN" | "WOMEN" | "UNISEX";
   colorway?: string;
   styleGroup?: string;
-  variants?: Array<{ size: number; stock: number }>;
+  variants?: Array<{ size: number | string; stock: number }>;
 } = {}) {
   const brandName = opts.brand ?? "Acme";
   const categoryName = opts.category ?? "Running";
@@ -80,10 +81,10 @@ export async function createProduct(opts: {
       images: ["products/test.jpg"],
       brandId: brand.id,
       categoryId: category.id,
-      variants: { create: opts.variants ?? [{ size: 42, stock: 10 }] },
+      variants: { create: (opts.variants ?? [{ size: 42, stock: 10 }]).map((v) => ({ size: String(v.size), stock: v.stock })) },
     },
-    include: { variants: { orderBy: { size: "asc" } } },
-  });
+    include: { variants: true },
+  }).then((p) => ({ ...p, variants: bySize(p.variants) }));
 }
 
 export const auth = (token: string) => ({ Authorization: `Bearer ${token}` });

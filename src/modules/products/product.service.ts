@@ -3,7 +3,8 @@ import { notFound } from "../../lib/errors.js";
 import { skipTake, toPage } from "../../lib/pagination.js";
 import { prisma } from "../../lib/prisma.js";
 import type { ProductListQuery } from "./product.schemas.js";
-import { imageUrl, productCardInclude, serializeProductCard, serializeProductDetail, toNumber } from "./product.serializer.js";
+import { compareSizes } from "../../lib/sizes.js";
+import { imageUrl, productCardInclude, serializeProductCard, serializeProductDetail } from "./product.serializer.js";
 
 const orderBy = (sort: ProductListQuery["sort"]): Prisma.ProductOrderByWithRelationInput[] => {
   // `id` as a tiebreaker keeps pagination stable when the primary key ties.
@@ -90,7 +91,6 @@ export async function getFacets(gender?: "men" | "women") {
       where: { stock: { gt: 0 }, product: active },
       distinct: ["size"],
       select: { size: true },
-      orderBy: { size: "asc" },
     }),
     prisma.product.aggregate({ where: active, _min: { priceCents: true }, _max: { priceCents: true } }),
   ]);
@@ -99,7 +99,7 @@ export async function getFacets(gender?: "men" | "women") {
     brands: brands.map((b) => ({ name: b.name, slug: b.slug, count: b._count.products })),
     categories: categories.map((c) => ({ name: c.name, slug: c.slug, count: c._count.products })),
     colors: colors.map((c) => ({ name: c.color, count: c._count._all })),
-    sizes: sizes.map((s) => toNumber(s.size)),
+    sizes: sizes.map((s) => s.size).sort(compareSizes),
     price: { min: price._min.priceCents ?? 0, max: price._max.priceCents ?? 0 },
   };
 }

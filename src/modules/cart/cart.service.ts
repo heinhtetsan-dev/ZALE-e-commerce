@@ -1,6 +1,6 @@
 import { AppError, badRequest, notFound } from "../../lib/errors.js";
 import { prisma } from "../../lib/prisma.js";
-import { imageUrl, stockStatus, toNumber } from "../products/product.serializer.js";
+import { imageUrl, stockStatus } from "../products/product.serializer.js";
 import { describeShortages, shortageMessage } from "../products/stock.js";
 import { MAX_LINE_QUANTITY } from "./cart.schemas.js";
 
@@ -23,7 +23,7 @@ export async function getCart(userId: string) {
     return {
       id: r.id,
       quantity: r.quantity,
-      variant: { id: r.variant.id, size: toNumber(r.variant.size), stock: r.variant.stock, stockStatus: stockStatus(r.variant.stock) },
+      variant: { id: r.variant.id, size: r.variant.size, stock: r.variant.stock, stockStatus: stockStatus(r.variant.stock) },
       product: { id: p.id, slug: p.slug, name: p.name, brand: p.brand.name, color: p.color, priceCents: p.priceCents, image: p.images[0] ? imageUrl(p.images[0]) : null, isActive: p.isActive },
       lineTotalCents: p.priceCents * r.quantity,
       issue: !p.isActive ? "unavailable" : r.variant.stock === 0 ? "out_of_stock" : r.quantity > r.variant.stock ? "insufficient_stock" : null,

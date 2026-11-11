@@ -1,5 +1,6 @@
 import { env } from "../../config/env.js";
 import type { Prisma } from "../../generated/prisma/client.js";
+import { compareSizes } from "../../lib/sizes.js";
 
 export type StockStatus = "in_stock" | "low_stock" | "out_of_stock";
 
@@ -11,25 +12,28 @@ export const stockStatus = (stock: number): StockStatus =>
 /** Images are stored either as absolute URLs or as object keys on the CDN. */
 export const imageUrl = (img: string) => (/^https?:\/\//.test(img) ? img : `${env.CDN_BASE_URL.replace(/\/$/, "")}/${img.replace(/^\//, "")}`);
 
-export const toNumber = (d: Prisma.Decimal | number) => (typeof d === "number" ? d : d.toNumber());
-
 export const productCardInclude = {
   brand: { select: { id: true, name: true, slug: true } },
   category: { select: { id: true, name: true, slug: true } },
-  variants: { select: { id: true, size: true, stock: true }, orderBy: { size: "asc" } },
+  variants: { select: { id: true, size: true, stock: true } },
 } satisfies Prisma.ProductInclude;
 
 type ProductWithCard = Prisma.ProductGetPayload<{ include: typeof productCardInclude }>;
 
-export const serializeVariant = (v: { id: string; size: Prisma.Decimal; stock: number }) => ({
+/** Size labels don't sort correctly as text ("L" < "M" < "S"), so order them in code. */
+export const bySize = <T extends { size: string }>(variants: T[]) => [...variants].sort((a, b) => compareSizes(a.size, b.size));
+
+export const serializeVariant = (v: { id: string; size: string; stock: number }) => ({
   id: v.id,
-  size: toNumber(v.size),
+  size: v.size,
   stock: v.stock,
   stockStatus: stockStatus(v.stock),
 });
 
 export const serializeProductCard = (p: ProductWithCard) => {
-  const availableSizes = p.variants.filter((v) => v.stock > 0).map((v) => toNumber(v.size));
+  const availableSizes = bySize(p.variants)
+    .filter((v) => v.stock > 0)
+    .map((v) => v.size);
   return {
     id: p.id,
     slug: p.slug,
@@ -65,6 +69,6 @@ export const serializeProductDetail = (p: ProductWithCard, colorways: ColorwayLi
   images: p.images.map(imageUrl),
   imageCredit: p.imageCredit,
   imageSourceUrl: p.imageSourceUrl,
-  variants: p.variants.map(serializeVariant),
+  variants: bySize(p.variants).map(serializeVariant),
   colorways,
 });

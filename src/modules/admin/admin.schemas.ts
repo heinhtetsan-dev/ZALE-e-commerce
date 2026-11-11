@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { paginationQuery } from "../../lib/pagination.js";
+import { normalizeSize } from "../../lib/sizes.js";
 
 const slug = z
   .string()
@@ -40,13 +41,19 @@ export const productBody = z.object({
 
 export const productUpdateBody = productBody.partial();
 
-const size = z.number().positive().max(60).multipleOf(0.5, "Sizes must be whole or half sizes");
+const size = z
+  .string()
+  .trim()
+  .min(1, "Enter a size")
+  .max(20)
+  .regex(/^[\w ./-]+$/, "Use letters, numbers, spaces, '/', '.' or '-'")
+  .transform(normalizeSize);
 
 export const variantsBody = z.object({
   variants: z
     .array(z.object({ size, stock: z.number().int().min(0).max(100_000) }))
     .max(40)
-    .refine((v) => new Set(v.map((x) => x.size)).size === v.length, "Each size may only appear once"),
+    .refine((v) => new Set(v.map((x) => x.size.toUpperCase())).size === v.length, "Each size may only appear once"),
 });
 
 export const variantStockBody = z.object({ stock: z.number().int().min(0).max(100_000) });

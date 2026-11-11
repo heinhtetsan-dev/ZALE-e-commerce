@@ -61,24 +61,24 @@ describe("admin products", () => {
 
   it("manages per-size stock, keeping ordered sizes", async () => {
     const { token } = await createAdmin();
-    const p = await createProduct({ variants: [{ size: 40, stock: 5 }, { size: 41, stock: 5 }, { size: 42, stock: 5 }] });
+    const p = await createProduct({ variants: [{ size: "S", stock: 5 }, { size: "M", stock: 5 }, { size: "L", stock: 5 }] });
     await placePaidOrder(p.variants[0]!.id);
 
     const res = await api()
       .put(`/api/v1/admin/products/${p.id}/variants`)
       .set(auth(token))
-      .send({ variants: [{ size: 42, stock: 12 }, { size: 43.5, stock: 3 }] });
+      .send({ variants: [{ size: "l", stock: 12 }, { size: "xl ", stock: 3 }] });
     expect(res.status).toBe(200);
-    const sizes = res.body.variants.map((v: { size: number; stock: number }) => [v.size, v.stock]);
-    // 40 was ordered -> kept with stock 0; 41 never ordered -> removed.
-    expect(sizes).toEqual([[40, 0], [42, 12], [43.5, 3]]);
+    const sizes = res.body.variants.map((v: { size: string; stock: number }) => [v.size, v.stock]);
+    // S was ordered -> kept with stock 0; M never ordered -> removed; "l" matches L.
+    expect(sizes).toEqual([["S", 0], ["L", 12], ["XL", 3]]);
 
     const neg = await api().patch(`/api/v1/admin/variants/${p.variants[2]!.id}`).set(auth(token)).send({ stock: -1 });
     expect(neg.status).toBe(400);
     const ok = await api().patch(`/api/v1/admin/variants/${p.variants[2]!.id}`).set(auth(token)).send({ stock: 7 });
-    expect(ok.body).toMatchObject({ size: 42, stock: 7 });
+    expect(ok.body).toMatchObject({ size: "L", stock: 7 });
 
-    const dupSizes = await api().put(`/api/v1/admin/products/${p.id}/variants`).set(auth(token)).send({ variants: [{ size: 42, stock: 1 }, { size: 42, stock: 2 }] });
+    const dupSizes = await api().put(`/api/v1/admin/products/${p.id}/variants`).set(auth(token)).send({ variants: [{ size: "L", stock: 1 }, { size: "l", stock: 2 }] });
     expect(dupSizes.status).toBe(400);
   });
 
@@ -148,7 +148,7 @@ describe("admin dashboard", () => {
     expect(res.body.ordersByStatus).toEqual({ PENDING: 3, SHIPPED: 0, DELIVERED: 0, CANCELLED: 0 });
     expect(res.body.topProducts[0]).toMatchObject({ name: "Alpha", units: 2, revenueCents: 20000 });
     expect(res.body.revenueByDay).toHaveLength(1);
-    expect(res.body.lowStock).toEqual([expect.objectContaining({ productName: "Beta", size: 40, stock: 2 })]);
+    expect(res.body.lowStock).toEqual([expect.objectContaining({ productName: "Beta", size: "40", stock: 2 })]);
   });
 
   it("returns 501 for uploads when storage is not configured", async () => {

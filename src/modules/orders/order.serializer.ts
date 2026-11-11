@@ -1,5 +1,5 @@
 import type { Prisma } from "../../generated/prisma/client.js";
-import { imageUrl, toNumber } from "../products/product.serializer.js";
+import { imageUrl } from "../products/product.serializer.js";
 
 export const orderInclude = {
   items: { include: { product: { select: { slug: true, images: true } } }, orderBy: { productName: "asc" } },
@@ -31,7 +31,7 @@ export const serializeOrder = (o: OrderWithItems) => ({
     productName: i.productName,
     productSlug: i.product.slug,
     image: i.product.images[0] ? imageUrl(i.product.images[0]) : null,
-    size: toNumber(i.size),
+    size: i.size,
     unitPriceCents: i.unitPriceCents,
     quantity: i.quantity,
     lineTotalCents: i.unitPriceCents * i.quantity,

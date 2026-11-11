@@ -5,7 +5,7 @@ import { AppError, conflict, notFound } from "../../lib/errors.js";
 import { skipTake, toPage } from "../../lib/pagination.js";
 import { prisma } from "../../lib/prisma.js";
 import { orderInclude, serializeOrder } from "../orders/order.serializer.js";
-import { imageUrl, productCardInclude, serializeProductDetail, toNumber } from "../products/product.serializer.js";
+import { imageUrl, productCardInclude, serializeProductDetail } from "../products/product.serializer.js";
 import type { z } from "zod";
 import type { adminOrderQuery, adminProductQuery, productBody, productUpdateBody, variantsBody } from "./admin.schemas.js";
 
@@ -91,21 +91,22 @@ export async function deleteProduct(id: string) {
 export async function replaceVariants(productId: string, input: z.infer<typeof variantsBody>) {
   const product = await prisma.product.findUnique({ where: { id: productId }, include: { variants: { include: { _count: { select: { orderItems: true } } } } } });
   if (!product) throw notFound("Product");
-  const wanted = new Map(input.variants.map((v) => [v.size, v.stock]));
+  // Keyed case-insensitively so "m" updates the existing "M" instead of adding a duplicate.
+  const wanted = new Map(input.variants.map((v) => [v.size.toUpperCase(), v]));
 
   await prisma.$transaction(async (tx) => {
     for (const existing of product.variants) {
-      const size = toNumber(existing.size);
-      if (wanted.has(size)) {
-        await tx.productVariant.update({ where: { id: existing.id }, data: { stock: wanted.get(size)! } });
-        wanted.delete(size);
+      const match = wanted.get(existing.size.toUpperCase());
+      if (match) {
+        await tx.productVariant.update({ where: { id: existing.id }, data: { stock: match.stock, size: match.size } });
+        wanted.delete(existing.size.toUpperCase());
       } else if (existing._count.orderItems > 0) {
         await tx.productVariant.update({ where: { id: existing.id }, data: { stock: 0 } });
       } else {
         await tx.productVariant.delete({ where: { id: existing.id } });
       }
     }
-    for (const [size, stock] of wanted) await tx.productVariant.create({ data: { productId, size, stock } });
+    for (const { size, stock } of wanted.values()) await tx.productVariant.create({ data: { productId, size, stock } });
   });
   return getAdminProduct(productId);
 }
@@ -114,7 +115,7 @@ export async function setVariantStock(variantId: string, stock: number) {
   const v = await prisma.productVariant.update({ where: { id: variantId }, data: { stock } }).catch(() => {
     throw notFound("Variant");
   });
-  return { id: v.id, size: toNumber(v.size), stock: v.stock };
+  return { id: v.id, size: v.size, stock: v.stock };
 }
 
 // ---------------------------------------------------------------- orders
@@ -211,7 +212,7 @@ export async function salesSummary(from: Date, to: Date) {
       productId: v.product.id,
       productName: v.product.name,
       image: v.product.images[0] ? imageUrl(v.product.images[0]) : null,
-      size: toNumber(v.size),
+      size: v.size,
       stock: v.stock,
     })),
   };

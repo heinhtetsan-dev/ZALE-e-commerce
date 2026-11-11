@@ -19,7 +19,7 @@ async function customerWithCartItem(variantId: string, quantity = 1) {
 
 describe("checkout", () => {
   it("creates an order, decrements stock, snapshots prices and clears the cart", async () => {
-    const p = await createProduct({ priceCents: 4500, variants: [{ size: 42, stock: 5 }] });
+    const p = await createProduct({ priceCents: 4500, variants: [{ size: "M", stock: 5 }] });
     const v = p.variants[0]!.id;
     const { token } = await customerWithCartItem(v, 2);
 
@@ -33,7 +33,7 @@ describe("checkout", () => {
       totalCents: 9800,
       shippingAddress: expect.objectContaining({ country: "GB" }),
     });
-    expect(res.body.order.items[0]).toMatchObject({ size: 42, quantity: 2, unitPriceCents: 4500 });
+    expect(res.body.order.items[0]).toMatchObject({ size: "M", quantity: 2, unitPriceCents: 4500 });
     expect(res.body.payment).toEqual({ mode: "mock", clientSecret: null });
     expect(await stockOf(v)).toBe(3);
     expect((await api().get("/api/v1/cart").set(auth(token))).body.items).toHaveLength(0);
@@ -58,8 +58,8 @@ describe("checkout", () => {
   });
 
   it("rolls back every line when one line is out of stock and suggests other sizes", async () => {
-    const a = await createProduct({ variants: [{ size: 42, stock: 5 }] });
-    const b = await createProduct({ name: "Last Pair", variants: [{ size: 40, stock: 1 }, { size: 41, stock: 4 }, { size: 44, stock: 0 }] });
+    const a = await createProduct({ variants: [{ size: "M", stock: 5 }] });
+    const b = await createProduct({ name: "Last Pair", variants: [{ size: "S", stock: 1 }, { size: "M", stock: 4 }, { size: "XL", stock: 0 }] });
     const { token } = await customerWithCartItem(a.variants[0]!.id, 2);
     await api().post("/api/v1/cart/items").set(auth(token)).send({ variantId: b.variants[0]!.id, quantity: 1 });
 
@@ -69,9 +69,9 @@ describe("checkout", () => {
     const res = await api().post("/api/v1/orders").set(auth(token)).send({ shippingAddress: address });
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe("OUT_OF_STOCK");
-    expect(res.body.error.message).toBe("Last Pair in size 40 is sold out.");
-    expect(res.body.error.details.items[0]).toMatchObject({ size: 40, requested: 1, available: 0 });
-    expect(res.body.error.details.items[0].alternatives).toEqual([expect.objectContaining({ size: 41, stock: 4 })]);
+    expect(res.body.error.message).toBe("Last Pair in size S is sold out.");
+    expect(res.body.error.details.items[0]).toMatchObject({ size: "S", requested: 1, available: 0 });
+    expect(res.body.error.details.items[0].alternatives).toEqual([expect.objectContaining({ size: "M", stock: 4 })]);
 
     expect(await stockOf(a.variants[0]!.id)).toBe(5);
     expect(await prisma.order.count()).toBe(0);
@@ -79,7 +79,7 @@ describe("checkout", () => {
   });
 
   it("never sells the last pair twice under concurrent checkouts", async () => {
-    const p = await createProduct({ variants: [{ size: 42, stock: 1 }, { size: 43, stock: 3 }] });
+    const p = await createProduct({ variants: [{ size: "M", stock: 1 }, { size: "L", stock: 3 }] });
     const v = p.variants[0]!.id;
     const buyers = await Promise.all(Array.from({ length: 8 }, () => customerWithCartItem(v)));
 
@@ -91,7 +91,7 @@ describe("checkout", () => {
     expect(statuses).toEqual([201, 409, 409, 409, 409, 409, 409, 409]);
     for (const r of results.filter((x) => x.status === 409)) {
       expect(r.body.error.code).toBe("OUT_OF_STOCK");
-      expect(r.body.error.details.items[0].alternatives.map((a: { size: number }) => a.size)).toEqual([43]);
+      expect(r.body.error.details.items[0].alternatives.map((a: { size: string }) => a.size)).toEqual(["L"]);
     }
     expect(await stockOf(v)).toBe(0);
     expect(await prisma.orderItem.count({ where: { variantId: v } })).toBe(1);
