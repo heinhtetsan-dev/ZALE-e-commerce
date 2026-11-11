@@ -92,3 +92,7 @@ npm test
 ```
 
 Tests run against the separate `shoeshop_test` database. Each file truncates the tables it uses. Stripe network calls are stubbed, but webhook signatures are verified with Stripe's real signing code.
+
+## Removing test data
+
+`npm run db:clean-test-data` previews what would be removed; `npm run db:clean-test-data -- --yes` deletes it: all orders (stock from orders that were not cancelled is restored), customer accounts other than `customer@shoeshop.test` (admins are kept), end-to-end test products ("E2E Tee …") and `@example.com` newsletter sign-ups. The catalog is kept. It refuses to run when `NODE_ENV=production`.
