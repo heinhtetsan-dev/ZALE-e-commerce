@@ -1,4 +1,4 @@
-# LUNE — Project Specification
+# ZALE — Project Specification
 
 Status: living document. Any intentional deviation in the implementation must be reflected here in the same change.
 
@@ -27,7 +27,8 @@ This spec lives at the workspace root and is versioned in its own small Git repo
 - **Men's and women's sections.** Every product has a gender: `MEN`, `WOMEN` or `UNISEX`. Shoppers browse Men, Women or All (header navigation and tabs on the listing). Unisex products appear under both. Switching audience clears the size filter.
 - **Sizes are labels.** Letter sizes (XS–XXL, plus S/M, M/L, L/XL for caps), waist sizes for jeans and trousers (men 28–38, women 24–32) and `One Size` for most accessories. The API orders them by fit (letters in wearing order, then numeric sizes, then One Size), and admins' size input is normalized (`m` becomes `M`, so sizes are unique case-insensitively).
 - **Colors.** Each product is one color of an item, with its name as sold in `colorway` (e.g. "Medium Stonewash") and a base `color` used by the color filter. Products sharing a `styleGroup` are colors of the same item. The detail page shows them as swatches labelled "Color" (same audience plus unisex).
-- **Image attribution.** Product photos may be freely licensed (e.g. Wikimedia Commons). `imageCredit` and `imageSourceUrl` hold the attribution required by CC BY / BY-SA licenses and are shown under the product image.
+- **Product photos** must be professional product-only shots: no people or faces (privacy). Images may be absolute https URLs, site-relative paths served by the storefront (`/catalog/x.jpg`), or CDN object keys.
+- **Image attribution.** Product photos may be freely licensed (e.g. Unsplash). `imageCredit` and `imageSourceUrl` hold the attribution required by CC BY / BY-SA licenses and are shown under the product image.
 - Product list with full-text-ish search (`q` matches name, colorway, description, brand name; case-insensitive).
 - Filters (storefront): category (multi), color (multi), size (multi; product must have that size **in stock**), price range (min/max). The API also accepts a `brand` filter, but the storefront no longer shows it (v1.6). Changing a filter keeps the scroll position; paging scrolls back to the top.
 - Sorting: `newest` (default), `price_asc`, `price_desc`, `rating`, `name`.
@@ -36,12 +37,12 @@ This spec lives at the workspace root and is versioned in its own small Git repo
   - `in_stock` (stock ≥ 5), `low_stock` (1–4, shows "Only N left"), `out_of_stock` (0, size disabled).
 - Only active products (`isActive = true`) are visible to non-admins.
 
-### 3.1a Storefront design (LUNE)
-- Brand: **LUNE**. Cream background, black ink, sand tones for image tiles; Cormorant Garamond (display) and Inter (text), self-hosted.
-- Header: announcement bar (free delivery threshold, returns), NEW IN / WOMEN / MEN / ACCESSORIES on the left, centered LUNE wordmark, search, account, wishlist and bag (count) on the right; a menu button on small screens.
-- Product cards: 3:4 image, wishlist heart, name, price, color dots linking to the item's other colors. **Quick add**: choose a size on the card (one-size items add directly).
-- Adding to the bag (product page or quick add) opens a **bag drawer** on the same page: lines with quantity controls, free-delivery progress, subtotal and checkout. The header bag button opens the same drawer; `/cart` remains as the full bag page.
-- Product page: image grid, gender · category eyebrow, serif title, price, round color swatches, size grid (sold-out sizes dashed and struck through), size guide dialog, ADD TO BAG, accordions for Description, Fabric & care and Delivery & returns.
+### 3.1a Storefront design (ZALE)
+- Brand: **ZALE**. Cream background, black ink, sand tones for image tiles; Cormorant Garamond (display) and Inter (text), self-hosted.
+- Header: announcement bar (free delivery threshold, returns), NEW IN / WOMEN / MEN / ACCESSORIES on the left, centered ZALE wordmark, search, account, wishlist and bag (count) on the right; a menu button on small screens.
+- Product cards: 3:4 image, wishlist heart, name, price, color name and how many colors the item comes in (no color swatches/boxes anywhere). **Quick add**: choose a size on the card (one-size items add directly).
+- Adding to the bag (product page or quick add) opens a **bag drawer** on the same page: lines with quantity controls, free-delivery progress, subtotal and checkout. The drawer slides in with an ease-out curve and out with an ease-in curve over a fading overlay (no motion when the user prefers reduced motion). The header bag button opens the same drawer; `/cart` remains as the full bag page.
+- Product page: image grid, gender · category eyebrow, serif title, price, "Color: <name>" with the other colors as text links ("Also in: …"), size grid (sold-out sizes dashed and struck through), size guide dialog, ADD TO BAG, accordions for Description, Fabric & care and Delivery & returns.
 - Logging out from a protected page returns to the home page; an expired session still goes to the login page.
 
 ### 3.2 Cart
@@ -149,7 +150,7 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 
 ### Orders (customer)
 - `POST /orders` `{ shippingAddress: { fullName, line1, line2?, city, postalCode, country, phone? } }` → 201 `{ order, payment: { mode, clientSecret } }` | 409 `OUT_OF_STOCK` | 400 empty cart
-- `GET /orders?page&pageSize`, `GET /orders/:id`
+- `GET /orders?page&pageSize` — the customer's order history: **paid orders only** (`PAID` or `REFUNDED`); unpaid checkouts are not purchases and are left out. `GET /orders/:id` still returns an unpaid order so it can be paid.
 - `POST /orders/:id/payment` → `{ mode, clientSecret }` — (re)obtain the payment session for a `PENDING` + `UNPAID` order (e.g. if the provider call failed during checkout or the customer left the payment page)
 - `POST /orders/:id/cancel` (only `PENDING` + `UNPAID`)
 - `POST /orders/:id/pay/mock` (mock mode only)
@@ -230,3 +231,4 @@ Databases must use UTF-8 encoding so names in any script (Burmese, Chinese, acce
 - v1.5 — catalog switched from shoes to men's and women's clothing and accessories: size labels instead of EU numeric sizes (migration converts existing values), clothing categories, 56-item demo catalog from 16 real brands plus the house label "Stride Essentials" for generic items; product photos must come from the Wikimedia thumbnail CDN (originals on upload.wikimedia.org are rate-limited); friendly route error page (e.g. stale bundles after a deploy) instead of the router's developer screen.
 - v1.6 — brand filter removed from the storefront (API still supports it); filter changes no longer reset the scroll position.
 - v1.7 — LUNE storefront redesign (home page, `/shop`, product page, header/footer, help pages), bag drawer and quick add, newsletter sign-up endpoint, `sizes`/`swatches` on product cards, house label renamed to "LUNE Essentials" with house items named without the label; whole-dollar prices shown without cents.
+- v1.8 — renamed to ZALE (house label "ZALE Essentials"); new 46-item catalog with professional product-only photos (no faces) from Unsplash plus a store photo; Shoes category under Men / Women (EU sizes) with no separate navigation; color swatches removed from cards, product page and filters; animated bag drawer; order history lists paid orders only; e2e purchases use throwaway shoppers.
