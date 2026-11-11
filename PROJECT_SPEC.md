@@ -1,10 +1,10 @@
-# Shoe Shop — Project Specification
+# Stride Fashion — Project Specification
 
 Status: living document. Any intentional deviation in the implementation must be reflected here in the same change.
 
 ## 1. Overview
 
-An online shoe store with a customer storefront and an admin back office.
+An online men's and women's fashion store (clothing and accessories) with a customer storefront and an admin back office. (The project started as a shoe shop; repository, database and package names still say `shoeshop`.)
 
 | Application | Folder       | Stack                                                                 | Repository        |
 |-------------|--------------|-----------------------------------------------------------------------|-------------------|
@@ -24,8 +24,9 @@ This spec lives at the workspace root and is versioned in its own small Git repo
 ## 3. Functional requirements
 
 ### 3.1 Catalog
-- **Men's and women's sections.** Every product has a gender: `MEN`, `WOMEN` or `UNISEX`. Shoppers browse Men, Women or All (header navigation and tabs on the listing). Unisex products appear under both. Size runs follow the audience (EU men's 39–47, women's 35.5–41, unisex 36–46). Switching audience clears the size filter.
-- **Colorways.** Each product is one colorway of a model, with its manufacturer colorway name (e.g. "White/Black-Infrared") and a base `color` used by the color filter. Products sharing a `styleGroup` are colorways of the same model. The detail page shows them as swatches (same audience plus unisex).
+- **Men's and women's sections.** Every product has a gender: `MEN`, `WOMEN` or `UNISEX`. Shoppers browse Men, Women or All (header navigation and tabs on the listing). Unisex products appear under both. Switching audience clears the size filter.
+- **Sizes are labels.** Letter sizes (XS–XXL, plus S/M, M/L, L/XL for caps), waist sizes for jeans and trousers (men 28–38, women 24–32) and `One Size` for most accessories. The API orders them by fit (letters in wearing order, then numeric sizes, then One Size), and admins' size input is normalized (`m` becomes `M`, so sizes are unique case-insensitively).
+- **Colors.** Each product is one color of an item, with its name as sold in `colorway` (e.g. "Medium Stonewash") and a base `color` used by the color filter. Products sharing a `styleGroup` are colors of the same item. The detail page shows them as swatches labelled "Color" (same audience plus unisex).
 - **Image attribution.** Product photos may be freely licensed (e.g. Wikimedia Commons). `imageCredit` and `imageSourceUrl` hold the attribution required by CC BY / BY-SA licenses and are shown under the product image.
 - Product list with full-text-ish search (`q` matches name, colorway, description, brand name; case-insensitive).
 - Filters: brand (multi), category (multi), color (multi), size (multi; product must have that size **in stock**), price range (min/max).
@@ -85,7 +86,7 @@ This spec lives at the workspace root and is versioned in its own small Git repo
 
 ## 4. Data model (PostgreSQL via Prisma)
 
-Money is stored as integer cents (`Int`). IDs are UUIDs. All timestamps are `timestamptz`, and the API's database sessions run with `TimeZone=UTC` (required by the Prisma pg driver adapter, which sends dates without an offset). Sizes are EU sizes stored as `Decimal(4,1)` (e.g. `42`, `42.5`).
+Money is stored as integer cents (`Int`). IDs are UUIDs. All timestamps are `timestamptz`, and the API's database sessions run with `TimeZone=UTC` (required by the Prisma pg driver adapter, which sends dates without an offset). Sizes are text labels (1–20 chars, `CHECK` enforced), e.g. `M`, `32`, `One Size`.
 
 | Model | Key fields | Constraints / indexes |
 |---|---|---|
@@ -179,14 +180,14 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 - **Rate limiting**: global limiter (default 1000 req / 15 min / IP, sized for shoppers sharing a carrier/office NAT; health checks and the Stripe webhook exempt) and a strict limiter on auth endpoints (default 20 / 15 min / IP). For login only **failed** attempts count (brute-force protection without locking out legitimate users); registration and password change count every request. The in-memory store is per instance; a shared store (e.g. Redis) should be configured when running multiple instances.
 - **Security**: bcrypt (cost 12) password hashes, Helmet, CORS allow-list (`CORS_ORIGINS`), Zod validation on every input, request body limit 100kb, JWT secret ≥ 32 chars required.
 - **Validation**: Zod on the back-end for every body/query/param; Zod on front-end forms.
-- **Testing**: back-end integration tests (Vitest + Supertest) against a real PostgreSQL, including a concurrency test for the last pair; front-end type-check, lint, unit tests (Vitest + Testing Library), production build, and Playwright end-to-end tests against the real API on desktop and mobile viewports.
+- **Testing**: back-end integration tests (Vitest + Supertest) against a real PostgreSQL, including a concurrency test for the last item in a size; front-end type-check, lint, unit tests (Vitest + Testing Library), production build, and Playwright end-to-end tests against the real API on desktop and mobile viewports.
 
 ## 7. Front-End pages
 
 | Route | Page |
 |---|---|
 | `/`, `/?gender=men`, `/?gender=women` | Product list: All / Men / Women tabs, search, filter sidebar (drawer on mobile), sort, pagination; filters in URL query string |
-| `/products/:slug` | Detail: gallery with photo credit, gender, colorway name and sibling colorways, size grid with stock status, add to cart, wishlist, reviews |
+| `/products/:slug` | Detail: gallery with photo credit, gender and category, color name and sibling colors, size picker with stock status, add to cart, wishlist, reviews |
 | `/cart` | Cart lines, quantity, remove, subtotal, checkout button |
 | `/checkout` | Shipping form → place order (stock reservation) → payment (Stripe Payment Element or mock) |
 | `/orders/:id/confirmation` | Payment result / order confirmation |
@@ -212,3 +213,4 @@ Databases must use UTF-8 encoding so names in any script (Burmese, Chinese, acce
 - v1.2 — timestamps are `timestamptz` with UTC sessions; login limiter counts failed attempts only; admin endpoint response details (`imageRefs`, `totalStock`, `customer`, order search `q`, summary shape, presign `key`). Front-end e2e tests (Playwright, desktop + mobile) added to §6 testing.
 - v1.3 — reviews list/`mine`/distribution and wishlist `ids` + pagination specified; payment intents are voided when an unpaid order is cancelled or expires, and payments arriving for cancelled orders are refunded (`paymentStatus=REFUNDED`); global rate limit default raised to 1000/15 min; route-level code splitting.
 - v1.4 — men's/women's/unisex catalog with gender filter and Men/Women navigation; real colorway names and colorway groups; image attribution fields; demo catalog of 40 real models from 12 brands with freely licensed Wikimedia Commons photos; UTF-8 database requirement.
+- v1.5 — catalog switched from shoes to men's and women's clothing and accessories: size labels instead of EU numeric sizes (migration converts existing values), clothing categories, 56-item demo catalog from 16 real brands plus the house label "Stride Essentials" for generic items; product photos must come from the Wikimedia thumbnail CDN (originals on upload.wikimedia.org are rate-limited); friendly route error page (e.g. stale bundles after a deploy) instead of the router's developer screen.
