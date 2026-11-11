@@ -1,6 +1,6 @@
-# LUNE — Back-End
+# ZALE — Back-End
 
-REST API for the LUNE men's and women's fashion shop: catalog, auth, cart, checkout with atomic stock handling, orders, reviews, wishlist, admin and Stripe (test mode) payments.
+REST API for the ZALE men's and women's fashion shop: catalog, auth, cart, checkout with atomic stock handling, orders, reviews, wishlist, admin and Stripe (test mode) payments.
 
 **Stack:** Node.js 20+, Express 5, TypeScript (ESM), PostgreSQL + Prisma 7, Zod, JWT + bcrypt, Stripe.
 The product contract lives in `../PROJECT_SPEC.md`.
@@ -18,7 +18,9 @@ npm run dev                   # http://localhost:4000/api/v1
 
 `db:start` runs real PostgreSQL binaries from the `embedded-postgres` package, so no system install is needed. To use your own server, point `DATABASE_URL` / `TEST_DATABASE_URL` at it (PostgreSQL 14+) and skip `db:start`.
 
-The demo catalog (`prisma/catalog.ts`) lists real branded clothing at typical retail prices for educational use, plus generic items under the house label `LUNE Essentials`. Sizes are labels (`XS`–`XXL`, waist sizes, `One Size`). Product photos are freely licensed images from Wikimedia Commons (`prisma/catalog-images.ts`). Each one keeps the photographer credit and source link its license requires, and the shop shows them under the product image. Re-running the seed refreshes catalog text and images but never changes stock, and hides products that are no longer in the catalog. `npx tsx scripts/check-catalog-images.ts` verifies every catalog photo loads from the Wikimedia thumbnail CDN.
+The demo catalog (`prisma/catalog.ts`) has 46 men's, women's and unisex items — clothing, shoes and accessories — at typical retail prices for educational use: a few real branded products (Nike, Puma, Ray-Ban) and generic items under the house label `ZALE Essentials`. Shoes are a category under Men / Women, not a separate section. Sizes are labels (`XS`–`XXL`, waist sizes, EU shoe sizes, `One Size`). Every photo is a professional product-only shot with no people or faces (`prisma/catalog-images.ts`): Unsplash photos (Unsplash License) and one store photo served by the storefront from `frontend/public/catalog/`. The credit is shown under the product image. Re-running the seed refreshes catalog text and images but never changes stock, and hides products that are no longer in the catalog. `npx tsx scripts/check-catalog-images.ts` verifies every catalog photo loads.
+
+Order history (`GET /orders`) lists only paid orders; unpaid checkouts stay reachable by id for payment and expire on their own.
 
 Demo accounts (from the seed): `admin@shoeshop.test` / `Admin123!`, `customer@shoeshop.test` / `Customer123!`.
 

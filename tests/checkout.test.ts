@@ -122,6 +122,8 @@ describe("orders after checkout", () => {
     const other = await customerWithCartItem(p.variants[0]!.id);
     const mine = await api().post("/api/v1/orders").set(auth(me.token)).send({ shippingAddress: address });
     const theirs = await api().post("/api/v1/orders").set(auth(other.token)).send({ shippingAddress: address });
+    // Order history shows purchases, so both orders are paid.
+    await prisma.order.updateMany({ data: { paymentStatus: "PAID" } });
 
     const list = await api().get("/api/v1/orders").set(auth(me.token));
     expect(list.body).toMatchObject({ total: 1, page: 1 });
@@ -170,5 +172,23 @@ describe("orders after checkout", () => {
     expect(await expireUnpaidOrders(30)).toBe(0);
     expect(await stockOf(v)).toBe(2);
     expect((await prisma.order.findUniqueOrThrow({ where: { id: body.order.id } })).status).toBe("CANCELLED");
+  });
+
+  it("lists only paid orders in the order history", async () => {
+    const p = await createProduct({ variants: [{ size: "M", stock: 5 }] });
+    const v = p.variants[0]!.id;
+    const { token } = await customerWithCartItem(v);
+    const unpaid = (await api().post("/api/v1/orders").set(auth(token)).send({ shippingAddress: address })).body.order;
+
+    const empty = await api().get("/api/v1/orders").set(auth(token));
+    expect(empty.status).toBe(200);
+    expect(empty.body).toMatchObject({ items: [], total: 0 });
+    // Still reachable by id so the customer can finish paying.
+    expect((await api().get(`/api/v1/orders/${unpaid.id}`).set(auth(token))).status).toBe(200);
+
+    await prisma.order.update({ where: { id: unpaid.id }, data: { paymentStatus: "PAID" } });
+    const paid = await api().get("/api/v1/orders").set(auth(token));
+    expect(paid.body.total).toBe(1);
+    expect(paid.body.items[0]).toMatchObject({ id: unpaid.id, paymentStatus: "PAID" });
   });
 });

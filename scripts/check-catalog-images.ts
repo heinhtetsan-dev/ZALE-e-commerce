@@ -1,20 +1,28 @@
-/** Verifies every demo-catalog image is on the Wikimedia thumbnail CDN and loads: `npx tsx scripts/check-catalog-images.ts` */
+/** Verifies every demo-catalog image exists and loads: `npx tsx scripts/check-catalog-images.ts` */
+import { existsSync } from "node:fs";
 import { catalog } from "../prisma/catalog.js";
-import { commonsImages } from "../prisma/catalog-images.js";
+import { catalogImages } from "../prisma/catalog-images.js";
 
 const used = [...new Set(catalog.flatMap((c) => c.images))];
 let bad = 0;
-for (const i of used) {
-  const img = commonsImages[i];
+for (const key of used) {
+  const img = catalogImages[key];
   if (!img) {
-    console.log(`#${i}: missing`);
+    console.log(`${key}: missing`);
     bad++;
     continue;
   }
-  const res = await fetch(img.url, { method: "HEAD", headers: { "User-Agent": "Mozilla/5.0" } });
-  const okHost = img.url.startsWith("https://thumb.wikimedia.org/");
-  if (!res.ok || !okHost) {
-    console.log(`#${i}: ${res.status} ${okHost ? "" : "(original upload, rate-limited host)"} ${img.url}`);
+  if (img.url.startsWith("/")) {
+    // Served by the storefront from frontend/public.
+    if (!existsSync(new URL(`../../frontend/public${img.url}`, import.meta.url))) {
+      console.log(`${key}: file not found in frontend/public${img.url}`);
+      bad++;
+    }
+    continue;
+  }
+  const res = await fetch(img.url, { method: "HEAD" });
+  if (!res.ok) {
+    console.log(`${key}: ${res.status} ${img.url}`);
     bad++;
   }
 }

@@ -46,7 +46,7 @@ export async function createPaymentSession(order: { id: string; totalCents: numb
         currency: "usd",
         automatic_payment_methods: { enabled: true },
         metadata: { orderId: order.id },
-        description: `LUNE order ${order.id.slice(0, 8).toUpperCase()}`,
+        description: `ZALE order ${order.id.slice(0, 8).toUpperCase()}`,
       },
       { idempotencyKey: `order-${order.id}-${existing?.stripePaymentIntentId ?? "first"}` },
     );

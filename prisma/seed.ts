@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import { brands, catalog, categories, productName, productSlug, sizeRuns, slugify } from "./catalog.js";
-import { commonsImages } from "./catalog-images.js";
+import { catalogImages } from "./catalog-images.js";
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL!, options: "-c TimeZone=UTC" }) });
 
@@ -44,11 +44,12 @@ async function main() {
   let updated = 0;
   for (const [i, item] of catalog.entries()) {
     const slug = productSlug(item);
-    const images = item.images.map((n) => {
-      const img = commonsImages[n];
-      if (!img) throw new Error(`Unknown image #${n} for ${slug}`);
+    const images = item.images.map((key) => {
+      const img = catalogImages[key];
+      if (!img) throw new Error(`Unknown image "${key}" for ${slug}`);
       return img;
     });
+    const credits = [...new Set(images.map((im) => im.credit))];
     const data = {
       name: productName(item),
       description: item.description,
@@ -60,8 +61,8 @@ async function main() {
       styleGroup: item.group,
       priceCents: item.price,
       images: images.map((im) => im.url),
-      imageCredit: `Photo${images.length > 1 ? "s" : ""}: ${images.map((im) => im.credit).join("; ")} — via Wikimedia Commons`,
-      imageSourceUrl: images[0]!.source,
+      imageCredit: `Photo${images.length > 1 ? "s" : ""}: ${credits.join(" · ")}`,
+      imageSourceUrl: images.find((im) => im.source)?.source ?? null,
       isActive: true,
     };
 

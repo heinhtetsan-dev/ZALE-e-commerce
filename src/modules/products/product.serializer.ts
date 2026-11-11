@@ -9,8 +9,11 @@ export const LOW_STOCK_THRESHOLD = 5;
 export const stockStatus = (stock: number): StockStatus =>
   stock <= 0 ? "out_of_stock" : stock < LOW_STOCK_THRESHOLD ? "low_stock" : "in_stock";
 
-/** Images are stored either as absolute URLs or as object keys on the CDN. */
-export const imageUrl = (img: string) => (/^https?:\/\//.test(img) ? img : `${env.CDN_BASE_URL.replace(/\/$/, "")}/${img.replace(/^\//, "")}`);
+/**
+ * Images are stored as absolute URLs, site-relative paths served by the
+ * storefront ("/catalog/x.jpg"), or object keys on the CDN.
+ */
+export const imageUrl = (img: string) => (/^(https?:\/\/|\/(?!\/))/.test(img) ? img : `${env.CDN_BASE_URL.replace(/\/$/, "")}/${img}`);
 
 export const productCardInclude = {
   brand: { select: { id: true, name: true, slug: true } },

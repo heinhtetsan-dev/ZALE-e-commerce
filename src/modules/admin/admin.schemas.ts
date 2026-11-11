@@ -14,7 +14,10 @@ const imageRef = z
   .trim()
   .min(1)
   .max(500)
-  .refine((v) => /^https:\/\//.test(v) || /^[\w./-]+$/.test(v), "Use an https URL or a CDN object key");
+  .refine(
+    (v) => /^https:\/\//.test(v) || (/^[\w./-]+$/.test(v) && !v.startsWith("//")),
+    "Use an https URL, a site path like /catalog/photo.jpg, or a CDN object key",
+  );
 
 export const productBody = z.object({
   name: z.string().trim().min(1).max(150),

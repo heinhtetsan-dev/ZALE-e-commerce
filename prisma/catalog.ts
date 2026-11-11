@@ -1,13 +1,25 @@
 /**
- * Demo fashion catalog for educational use. Branded items are real products
- * whose photos show that brand; generic items use the shop's own label
- * "LUNE Essentials" so no brand is claimed that the photo doesn't show.
- * Prices are typical retail prices in USD cents. Photos come from Wikimedia
- * Commons (see catalog-images.ts) with the attribution their licenses require.
+ * Demo fashion catalog for educational use. Every item has a professional
+ * product-only photo (no people, no faces). Branded items are real products
+ * whose photos show that brand; everything else uses the shop's own label
+ * "ZALE Essentials" so no brand is claimed that the photo doesn't show.
+ * Prices are typical retail prices in USD cents. Photos: see catalog-images.ts.
+ * Shoes have no section of their own: they sit under Men / Women like any
+ * other category.
  */
 export type Gender = "MEN" | "WOMEN" | "UNISEX";
 
-export type SizeRun = "menTops" | "womenTops" | "unisexTops" | "menWaist" | "womenWaist" | "letters" | "capFit" | "oneSize";
+export type SizeRun =
+  | "menTops"
+  | "womenTops"
+  | "unisexTops"
+  | "menWaist"
+  | "womenWaist"
+  | "letters"
+  | "menShoes"
+  | "womenShoes"
+  | "unisexShoes"
+  | "oneSize";
 
 export const sizeRuns: Record<SizeRun, string[]> = {
   menTops: ["S", "M", "L", "XL", "XXL"],
@@ -16,47 +28,34 @@ export const sizeRuns: Record<SizeRun, string[]> = {
   menWaist: ["28", "30", "31", "32", "33", "34", "36", "38"],
   womenWaist: ["24", "25", "26", "27", "28", "29", "30", "31", "32"],
   letters: ["S", "M", "L", "XL"],
-  capFit: ["S/M", "M/L", "L/XL"],
+  // EU shoe sizes.
+  menShoes: ["40", "41", "42", "43", "44", "45", "46"],
+  womenShoes: ["36", "37", "38", "39", "40", "41"],
+  unisexShoes: ["37", "38", "39", "40", "41", "42", "43", "44", "45"],
   oneSize: ["One Size"],
 };
 
-export const brands = [
-  "LUNE Essentials",
-  "Levi's",
-  "Polo Ralph Lauren",
-  "Lacoste",
-  "Fred Perry",
-  "Barbour",
-  "Carhartt",
-  "Schott NYC",
-  "Adidas",
-  "The North Face",
-  "Nike",
-  "7 For All Mankind",
-  "New Era",
-  "Ray-Ban",
-  "Randers Handsker",
-  "HiMountain",
-];
+export const HOUSE_BRAND = "ZALE Essentials";
+const Z = HOUSE_BRAND;
+
+export const brands = [HOUSE_BRAND, "Nike", "Puma", "Ray-Ban"];
 
 export const categories = [
-  "T-Shirts & Polos",
-  "Shirts & Blouses",
-  "Hoodies & Sweatshirts",
+  "Tops & T-Shirts",
+  "Shirts",
   "Knitwear",
+  "Hoodies & Sweatshirts",
   "Jackets & Coats",
-  "Jeans",
-  "Trousers",
   "Dresses",
-  "Skirts",
-  "Activewear",
+  "Jeans",
+  "Shoes",
   "Accessories",
 ];
 
 export interface CatalogProduct {
   brand: string;
   model: string;
-  /** Color name as sold, e.g. "Medium Stonewash". */
+  /** Color name as sold, e.g. "Light Wash". */
   colorway: string;
   /** Base color used by the color filter. */
   color: string;
@@ -64,8 +63,8 @@ export interface CatalogProduct {
   category: string;
   price: number;
   sizes: SizeRun;
-  /** Keys into commonsImages (contact-sheet numbers). */
-  images: number[];
+  /** Keys into catalogImages. */
+  images: string[];
   /** Products sharing a group are colors of the same item. */
   group: string;
   description: string;
@@ -79,243 +78,200 @@ export const slugify = (s: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
+/** House-label items are named without the label ("Wool Swing Coat"); branded items keep it. */
+export const productName = (c: CatalogProduct) => (c.brand === HOUSE_BRAND ? c.model : `${c.brand} ${c.model}`);
+
 export const productSlug = (c: CatalogProduct) =>
   slugify(`${productName(c)} ${c.colorway} ${c.gender === "UNISEX" ? "" : c.gender === "MEN" ? "mens" : "womens"}`);
 
-export const HOUSE_BRAND = "LUNE Essentials";
-const E = HOUSE_BRAND;
-
-/** House-label items are named without the label ("Wool Blend Long Coat"); branded items keep it. */
-export const productName = (c: CatalogProduct) => (c.brand === HOUSE_BRAND ? c.model : `${c.brand} ${c.model}`);
-
 export const catalog: CatalogProduct[] = [
-  // ------------------------------------------------------------------ men
-  {
-    brand: "Levi's", model: "501 Original Fit Jeans", colorway: "Medium Stonewash", color: "Blue", gender: "MEN", category: "Jeans", price: 7950, sizes: "menWaist", images: [1], group: "levis-501",
-    description: "The original button-fly jean, made by Levi's since the 1870s. Straight leg, regular fit through the seat and thigh, 100% cotton denim and the Red Tab on the back pocket.",
-  },
-  {
-    brand: "Levi's", model: "501 Original Fit Jeans", colorway: "Light Indigo Destructed", color: "Blue", gender: "MEN", category: "Jeans", price: 8950, sizes: "menWaist", images: [0], group: "levis-501",
-    description: "The classic 501 in a light, broken-in wash with rips and repairs at the knees for a lived-in look. Button fly, straight leg and rigid cotton denim that softens with every wear.",
-  },
-  {
-    brand: "Levi's", model: "Trucker Jacket", colorway: "Medium Stonewash", color: "Blue", gender: "MEN", category: "Jackets & Coats", price: 9800, sizes: "menTops", images: [2, 3], group: "levis-trucker",
-    description: "The denim jacket Levi's introduced in 1967: pointed chest-pocket flaps, V-seams down the front and adjustable waist tabs. Layers over a tee in summer and under a coat in winter.",
-  },
-  {
-    brand: "Polo Ralph Lauren", model: "Stadium Print Short-Sleeve Shirt", colorway: "Multi Print", color: "Multicolor", gender: "MEN", category: "Shirts & Blouses", price: 14800, sizes: "menTops", images: [4], group: "rl-stadium",
-    description: "Inspired by Ralph Lauren's 1992 Stadium collection, this relaxed camp-collar shirt is covered in a bold sporting print. Lightweight cotton with a straight hem made to be worn untucked.",
-  },
-  {
-    brand: "Polo Ralph Lauren", model: "Classic Fit Madras Shirt", colorway: "Blue Madras Plaid", color: "Blue", gender: "MEN", category: "Shirts & Blouses", price: 12500, sizes: "menTops", images: [5], group: "rl-madras",
-    description: "A summer staple woven from breathable madras cotton in a multicolored plaid, with a button-down collar and the embroidered Pony on the chest.",
-  },
-  {
-    brand: "Lacoste", model: "Original L.12.12 Polo", colorway: "Light Blue", color: "Blue", gender: "MEN", category: "T-Shirts & Polos", price: 11000, sizes: "menTops", images: [7], group: "lacoste-l1212",
-    description: "René Lacoste's 1933 design that created the polo shirt as we know it. Breathable cotton petit piqué, ribbed collar, two-button placket and the green crocodile on the chest.",
-  },
-  {
-    brand: "Lacoste", model: "Striped Cotton Polo", colorway: "Yellow/Blue Stripe", color: "Yellow", gender: "MEN", category: "T-Shirts & Polos", price: 12000, sizes: "menTops", images: [8], group: "lacoste-stripe",
-    description: "A cheerful striped take on the classic Lacoste polo in soft cotton jersey, with a ribbed collar and the crocodile badge.",
-  },
-  {
-    brand: "Fred Perry", model: "M12 Twin Tipped Polo", colorway: "White/Navy/Red", color: "White", gender: "MEN", category: "T-Shirts & Polos", price: 9500, sizes: "menTops", images: [11], group: "fred-perry-m12",
-    description: "The polo Fred Perry launched in 1952, still made in England. Cotton piqué with twin-tipped collar and cuffs and the embroidered Laurel Wreath.",
-  },
-  {
-    brand: "Fred Perry", model: "M12 Twin Tipped Polo", colorway: "Black", color: "Black", gender: "MEN", category: "T-Shirts & Polos", price: 9500, sizes: "menTops", images: [10], group: "fred-perry-m12",
-    description: "The iconic M12 in black with contrast tipping on the collar and cuffs. Durable cotton piqué and a regular fit that keeps its shape.",
-  },
-  {
-    brand: "Barbour", model: "Endurance Wax Jacket", colorway: "Olive", color: "Green", gender: "MEN", category: "Jackets & Coats", price: 34900, sizes: "menTops", images: [14, 12], group: "barbour-wax",
-    description: "Barbour has made waxed cotton jackets in South Shields since 1894. Water-resistant waxed cotton outer, corduroy-trimmed collar, studded storm fly and roomy bellows pockets. Can be re-waxed to last for decades.",
-  },
-  {
-    brand: "Carhartt", model: "Duck Detroit Jacket", colorway: "Gravel", color: "Grey", gender: "MEN", category: "Jackets & Coats", price: 18000, sizes: "menTops", images: [15], group: "carhartt-detroit",
-    description: "A workwear classic from 1954: heavyweight cotton duck, corduroy collar, blanket-lined body and adjustable waist tabs. Built to take hard wear and look better with age.",
-  },
-  {
-    brand: "Carhartt", model: "Duck Active Hooded Jacket", colorway: "Carhartt Brown", color: "Brown", gender: "MEN", category: "Jackets & Coats", price: 12000, sizes: "menTops", images: [16], group: "carhartt-active",
-    description: "Firm-hand cotton duck with a quilted lining and attached hood. Triple-stitched seams, rib-knit cuffs and the square Carhartt label.",
-  },
-  {
-    brand: "Schott NYC", model: "613 One Star Perfecto Leather Jacket", colorway: "Black", color: "Black", gender: "MEN", category: "Jackets & Coats", price: 105000, sizes: "menTops", images: [17, 18], group: "schott-613",
-    description: "Schott made the first Perfecto motorcycle jacket in 1928, and the 613 'One Star' became the 1950s icon. Heavy steerhide leather, asymmetric zip, belted waist and star studs on the epaulettes.",
-  },
-  {
-    brand: E, model: "MA-1 Bomber Jacket", colorway: "Petrol Blue", color: "Blue", gender: "MEN", category: "Jackets & Coats", price: 8900, sizes: "menTops", images: [19], group: "ma1",
-    description: "Modelled on the 1950s flight jacket: smooth nylon shell, light padding, rib-knit collar, cuffs and hem, and a utility pocket on the sleeve.",
-  },
-  {
-    brand: E, model: "Slim Fit Chinos", colorway: "Stone", color: "Beige", gender: "MEN", category: "Trousers", price: 5900, sizes: "menWaist", images: [21, 22], group: "chinos",
-    description: "Everyday cotton twill chinos with a little stretch, a slim tapered leg and slant pockets. Smart enough for the office, easy enough for the weekend.",
-  },
-  {
-    brand: E, model: "Cargo Trousers", colorway: "Olive", color: "Green", gender: "MEN", category: "Trousers", price: 6900, sizes: "menWaist", images: [39], group: "cargo",
-    description: "Relaxed-fit cotton ripstop trousers with bellows cargo pockets and a straight leg, inspired by military field trousers.",
-  },
-  {
-    brand: E, model: "Brushed Flannel Shirt", colorway: "Teal/Rust Check", color: "Blue", gender: "MEN", category: "Shirts & Blouses", price: 4900, sizes: "menTops", images: [23, 24], group: "flannel",
-    description: "Soft brushed cotton flannel in a bold check, with two chest pockets and a regular fit for layering over a tee.",
-  },
-  {
-    brand: E, model: "Aloha Camp Shirt", colorway: "Blue Palm Print", color: "Blue", gender: "MEN", category: "Shirts & Blouses", price: 4500, sizes: "menTops", images: [36], group: "aloha",
-    description: "A breezy Hawaiian-style shirt with a camp collar and an all-over palm print. Lightweight viscose that drapes well in hot weather.",
-  },
-  {
-    brand: E, model: "Aloha Camp Shirt", colorway: "White Palm Print", color: "White", gender: "MEN", category: "Shirts & Blouses", price: 4500, sizes: "menTops", images: [37], group: "aloha",
-    description: "Our camp-collar Aloha shirt on a white ground with grey palms: holiday-ready and easy to style with chinos or shorts.",
-  },
-  {
-    brand: "Polo Ralph Lauren", model: "Southwestern Print Down Jacket", colorway: "Navy Multi", color: "Blue", gender: "MEN", category: "Jackets & Coats", price: 49800, sizes: "menTops", images: [29], group: "rl-down",
-    description: "A warm down-filled jacket with a striking Southwestern-inspired pattern, ribbed trims and a full-zip front.",
-  },
-  {
-    brand: "Adidas", model: "Helionic Down Jacket", colorway: "Black", color: "Black", gender: "MEN", category: "Jackets & Coats", price: 18000, sizes: "menTops", images: [30], group: "adidas-helionic",
-    description: "A lightweight, packable puffer with responsibly sourced down insulation, a water-repellent shell and the 3-Stripes on the shoulders.",
-  },
-  {
-    brand: "The North Face", model: "Mountain Light Triclimate Jacket", colorway: "TNF Black", color: "Black", gender: "MEN", category: "Jackets & Coats", price: 37000, sizes: "menTops", images: [31], group: "tnf-triclimate",
-    description: "A 3-in-1 system: a waterproof, breathable GORE-TEX shell and a zip-in insulated jacket that can each be worn on their own. Built for changeable mountain weather.",
-  },
-  {
-    brand: "Polo Ralph Lauren", model: "Color-Block Windbreaker", colorway: "Green/Red/Navy", color: "Green", gender: "MEN", category: "Jackets & Coats", price: 19800, sizes: "menTops", images: [34], group: "rl-windbreaker",
-    description: "A retro sporting windbreaker in bold color blocks with a stowaway hood, half-zip pullover style and an elastic hem.",
-  },
-  {
-    brand: E, model: "Track Jacket", colorway: "Black/Gold", color: "Black", gender: "MEN", category: "Activewear", price: 6500, sizes: "menTops", images: [41], group: "track-jacket",
-    description: "A smooth tricot track top with a contrast chest panel, stand-up collar and full zip, for training days and off-duty looks.",
-  },
-  {
-    brand: "Randers Handsker", model: "Lined Leather Gloves", colorway: "Black", color: "Black", gender: "MEN", category: "Accessories", price: 9500, sizes: "letters", images: [103], group: "randers-gloves",
-    description: "Made by Randers Handsker, a Danish glovemaker founded in 1811. Soft lamb leather with a warm lining and a close, natural fit.",
-  },
-  {
-    brand: E, model: "Bi-Fold Leather Wallet", colorway: "Dark Navy", color: "Blue", gender: "MEN", category: "Accessories", price: 3900, sizes: "oneSize", images: [100], group: "wallet",
-    description: "A slim bi-fold in full-grain leather with six card slots and a full-length note compartment.",
-  },
-
   // ---------------------------------------------------------------- women
   {
-    brand: E, model: "Breton Stripe Top", colorway: "Ecru/Navy Stripe", color: "Blue", gender: "WOMEN", category: "T-Shirts & Polos", price: 4500, sizes: "womenTops", images: [57, 55], group: "breton",
-    description: "The French sailor stripe, adopted by the French Navy in 1858 and by Parisian style ever since. Heavyweight cotton jersey with a boat neck and long sleeves.",
+    brand: Z, model: "Chunky Knit Sweater", colorway: "Ivory", color: "White", gender: "WOMEN", category: "Knitwear", price: 8900, sizes: "womenTops", images: ["knit-ivory"], group: "chunky-knit",
+    description: "A cosy oversized sweater in a chunky rib knit with dropped shoulders and a relaxed crew neck. Wool-blend yarn that keeps its shape wash after wash.",
   },
   {
-    brand: E, model: "Pintuck Cotton Blouse", colorway: "Ivory", color: "White", gender: "WOMEN", category: "Shirts & Blouses", price: 5900, sizes: "womenTops", images: [71], group: "blouse",
-    description: "A romantic vintage-inspired blouse in fine cotton with delicate pintuck detailing across the front and a soft collar.",
+    brand: Z, model: "Hand-Knit Crew Sweater", colorway: "Rust", color: "Orange", gender: "WOMEN", category: "Knitwear", price: 9900, sizes: "womenTops", images: ["knit-rust"], group: "hand-knit-crew",
+    description: "A warm rust crew-neck knitted by hand in a soft wool blend, with ribbed cuffs and hem. Easy over a shirt collar or on its own with jeans.",
   },
   {
-    brand: E, model: "Cashmere Crew Neck Sweater", colorway: "Grey Melange", color: "Grey", gender: "WOMEN", category: "Knitwear", price: 14900, sizes: "womenTops", images: [58], group: "cashmere",
-    description: "Pure, soft cashmere in a relaxed crew-neck shape with ribbed trims. Light enough to layer and warm enough to wear on its own.",
+    brand: Z, model: "Long Sleeve Cotton Top", colorway: "White", color: "White", gender: "WOMEN", category: "Tops & T-Shirts", price: 3500, sizes: "womenTops", images: ["longsleeve-white"], group: "longsleeve-top",
+    description: "A clean long-sleeve top in soft, mid-weight cotton jersey with a close crew neck. The layering piece that goes under everything.",
   },
   {
-    brand: E, model: "Button-Front Cardigan", colorway: "Scarlet", color: "Red", gender: "WOMEN", category: "Knitwear", price: 6900, sizes: "womenTops", images: [59], group: "cardigan",
-    description: "A fine-knit V-neck cardigan in a vivid red with a full button front. Throw it over a dress or wear it buttoned as a top.",
+    brand: Z, model: "Sleeveless Shell Top", colorway: "Black", color: "Black", gender: "WOMEN", category: "Tops & T-Shirts", price: 3900, sizes: "womenTops", images: ["shell-top-black"], group: "shell-top",
+    description: "A simple sleeveless top with a high round neck, cut from smooth crepe that drapes well. Tuck it into tailoring or wear it loose over jeans.",
   },
   {
-    brand: E, model: "Pleated Little Black Dress", colorway: "Black", color: "Black", gender: "WOMEN", category: "Dresses", price: 12900, sizes: "womenTops", images: [50], group: "lbd",
-    description: "A timeless sleeveless dress in fine wool with a fitted bodice and a softly pleated skirt that moves as you walk.",
+    brand: Z, model: "Lace Midi Dress", colorway: "Ivory", color: "White", gender: "WOMEN", category: "Dresses", price: 12900, sizes: "womenTops", images: ["lace-dress"], group: "lace-midi",
+    description: "A romantic midi dress in delicate floral lace over a soft lining, with a fitted bodice and a gently flared skirt.",
   },
   {
-    brand: E, model: "Flowing Maxi Dress", colorway: "Electric Blue", color: "Blue", gender: "WOMEN", category: "Dresses", price: 8900, sizes: "womenTops", images: [51], group: "maxi",
-    description: "A floor-length jersey dress in a saturated electric blue, with a scoop neck and a fluid skirt. Pairs well with tan accessories.",
+    brand: Z, model: "Embroidered Sleeveless Dress", colorway: "Floral", color: "Multicolor", gender: "WOMEN", category: "Dresses", price: 7900, sizes: "womenTops", images: ["embroidered-dress"], group: "embroidered-dress",
+    description: "A breezy sleeveless dress with embroidered flowers across the bodice and a swingy skirt. Lightweight cotton for warm days.",
   },
   {
-    brand: E, model: "Ribbed Knit Midi Dress", colorway: "Burgundy", color: "Red", gender: "WOMEN", category: "Dresses", price: 7900, sizes: "womenTops", images: [76], group: "knit-dress",
-    description: "A body-skimming midi dress in stretchy rib knit with long sleeves and a high neck. Cosy for autumn with tights and boots.",
+    brand: Z, model: "Strappy Sundress", colorway: "Mint Green", color: "Green", gender: "WOMEN", category: "Dresses", price: 6900, sizes: "womenTops", images: ["sundress-mint"], group: "strappy-sundress",
+    description: "A light summer dress with thin adjustable straps, a smocked back and a relaxed skirt that falls just below the knee.",
   },
   {
-    brand: E, model: "Knitted Maxi Dress", colorway: "Mustard", color: "Yellow", gender: "WOMEN", category: "Dresses", price: 8900, sizes: "womenTops", images: [77], group: "knit-maxi",
-    description: "A long, soft-knit dress in warm mustard with a crew neck and a gently fitted silhouette.",
+    brand: Z, model: "Tailored Blazer", colorway: "White", color: "White", gender: "WOMEN", category: "Jackets & Coats", price: 14900, sizes: "womenTops", images: ["blazer-white"], group: "tailored-blazer-w",
+    description: "A sharp single-breasted blazer with notch lapels, flap pockets and lightly padded shoulders. Fully lined and cut slightly longer to sit over trousers or dresses.",
   },
   {
-    brand: E, model: "Pleated Mini Skirt", colorway: "Black", color: "Black", gender: "WOMEN", category: "Skirts", price: 4900, sizes: "womenTops", images: [63], group: "pleated-skirt",
-    description: "A swingy mini skirt with crisp knife pleats and a comfortable waistband. Wear it with opaque tights and a chunky knit.",
+    brand: Z, model: "Wool Swing Coat", colorway: "Mustard", color: "Yellow", gender: "WOMEN", category: "Jackets & Coats", price: 18900, sizes: "womenTops", images: ["coat-mustard"], group: "swing-coat",
+    description: "A statement coat in warm mustard wool blend with an A-line swing shape, wide collar and deep pockets. Brightens every winter outfit.",
   },
   {
-    brand: "7 For All Mankind", model: "Denim Pencil Skirt", colorway: "Dark Indigo", color: "Blue", gender: "WOMEN", category: "Skirts", price: 16800, sizes: "womenWaist", images: [64], group: "7fam-skirt",
-    description: "A knee-length pencil skirt in premium dark denim from the Los Angeles denim label, with five-pocket styling and a back vent.",
+    brand: Z, model: "High-Rise Mom Jeans", colorway: "Light Wash", color: "Blue", gender: "WOMEN", category: "Jeans", price: 6900, sizes: "womenWaist", images: ["mom-jeans", "denim-set"], group: "mom-jeans",
+    description: "Vintage-inspired mom jeans with a high waist, relaxed hip and tapered ankle. Rigid cotton denim in a soft light wash with a five-pocket finish.",
   },
   {
-    brand: E, model: "High-Rise Mom Jeans", colorway: "Light Wash", color: "Blue", gender: "WOMEN", category: "Jeans", price: 6900, sizes: "womenWaist", images: [73], group: "mom-jeans",
-    description: "A '90s favourite: high waist, relaxed hips and a tapered leg in rigid cotton denim with a light vintage wash.",
+    brand: Z, model: "Strappy Heeled Sandals", colorway: "Gold", color: "Gold", gender: "WOMEN", category: "Shoes", price: 9900, sizes: "womenShoes", images: ["sandal-gold"], group: "heeled-sandals",
+    description: "Delicate metallic sandals with fine crossover straps, an adjustable ankle strap and a slim 8 cm heel. Made for evenings out.",
   },
   {
-    brand: "Nike", model: "Swoosh Medium-Support Sports Bra", colorway: "Black/White", color: "Black", gender: "WOMEN", category: "Activewear", price: 3500, sizes: "womenTops", images: [66], group: "nike-swoosh-bra",
-    description: "A racerback sports bra with medium support for gym and studio workouts. Sweat-wicking Dri-FIT fabric and removable pads.",
+    brand: Z, model: "Strappy Heeled Sandals", colorway: "Black", color: "Black", gender: "WOMEN", category: "Shoes", price: 9900, sizes: "womenShoes", images: ["sandal-black"], group: "heeled-sandals",
+    description: "Delicate black sandals with fine crossover straps, an adjustable ankle strap and a slim 8 cm heel. The pair that goes with every dress.",
   },
   {
-    brand: E, model: "Classic Belted Trench Coat", colorway: "Stone", color: "Beige", gender: "WOMEN", category: "Jackets & Coats", price: 15900, sizes: "womenTops", images: [68], group: "trench",
-    description: "The trench coat born in the First World War: water-repellent cotton gabardine, double-breasted front, storm flap, epaulettes and a tie belt.",
+    brand: Z, model: "Pointed Leather Pumps", colorway: "Nude", color: "Beige", gender: "WOMEN", category: "Shoes", price: 11900, sizes: "womenShoes", images: ["heels-nude"], group: "pointed-pumps",
+    description: "Classic pointed-toe pumps in smooth leather with a cushioned insole and a mid-height stiletto heel. A neutral shade that lengthens the leg.",
   },
   {
-    brand: E, model: "Houndstooth Wool Coat", colorway: "Black/White", color: "Black", gender: "WOMEN", category: "Jackets & Coats", price: 19900, sizes: "womenTops", images: [78], group: "houndstooth",
-    description: "A longline coat in a classic houndstooth wool blend with notch lapels and a single-breasted front.",
+    brand: "Nike", model: "Air Force 1 '07", colorway: "Pastel", color: "Multicolor", gender: "WOMEN", category: "Shoes", price: 11500, sizes: "womenShoes", images: ["af1-pastel"], group: "nike-af1",
+    description: "The 1982 basketball icon in soft pastel leather panels, with Nike Air cushioning in the sole and the classic perforated toe.",
   },
   {
-    brand: E, model: "Leather Saddle Bag", colorway: "Tan", color: "Brown", gender: "WOMEN", category: "Accessories", price: 12900, sizes: "oneSize", images: [80], group: "saddle-bag",
-    description: "A structured crossbody bag in vegetable-tanned leather with a front flap, buckle fastening and an adjustable strap.",
+    brand: Z, model: "Rain Boots", colorway: "Yellow", color: "Yellow", gender: "WOMEN", category: "Shoes", price: 5900, sizes: "womenShoes", images: ["rain-boots"], group: "rain-boots",
+    description: "Waterproof natural-rubber wellies in a cheerful yellow, with a grippy sole and a comfortable lined footbed. Puddles welcome.",
   },
   {
-    brand: E, model: "Printed Silk Scarf", colorway: "Paisley Multi", color: "Multicolor", gender: "WOMEN", category: "Accessories", price: 5900, sizes: "oneSize", images: [102], group: "silk-scarf",
-    description: "A generously sized silk scarf with a rich paisley print. Wear it at the neck, in your hair or tied to a bag.",
+    brand: Z, model: "Leather Satchel", colorway: "Grey", color: "Grey", gender: "WOMEN", category: "Accessories", price: 14900, sizes: "oneSize", images: ["satchel-grey"], group: "leather-satchel",
+    description: "A structured satchel in pebbled leather with a top handle, a detachable shoulder strap and a zip pocket inside. Fits a tablet and the day's essentials.",
+  },
+  {
+    brand: Z, model: "Structured Top-Handle Bag", colorway: "Yellow", color: "Yellow", gender: "WOMEN", category: "Accessories", price: 11900, sizes: "oneSize", images: ["bag-yellow"], group: "top-handle-bag",
+    description: "A compact top-handle bag in bright yellow leather with a flap closure and gold-tone hardware. Adds colour to a neutral outfit.",
+  },
+  {
+    brand: Z, model: "Leather Tote", colorway: "White", color: "White", gender: "WOMEN", category: "Accessories", price: 13900, sizes: "oneSize", images: ["tote-white"], group: "leather-tote",
+    description: "A roomy tote in soft white leather with sturdy shoulder handles and an inner zip pocket. Big enough for a laptop.",
+  },
+  {
+    brand: Z, model: "Woven Straw Tote", colorway: "Natural", color: "Beige", gender: "WOMEN", category: "Accessories", price: 6900, sizes: "oneSize", images: ["tote-woven"], group: "straw-tote",
+    description: "A hand-woven straw tote with leather handles. Light, roomy and made for market mornings and beach days.",
+  },
+
+  // ------------------------------------------------------------------ men
+  {
+    brand: Z, model: "Slim Jeans", colorway: "Mid Blue", color: "Blue", gender: "MEN", category: "Jeans", price: 7900, sizes: "menWaist", images: ["jeans-mid"], group: "slim-jeans",
+    description: "Slim through the seat and thigh with a slightly tapered leg. Cotton denim with a touch of stretch in an easy mid-blue wash.",
+  },
+  {
+    brand: Z, model: "Slim Jeans", colorway: "Dark Indigo", color: "Blue", gender: "MEN", category: "Jeans", price: 7900, sizes: "menWaist", images: ["jeans-dark"], group: "slim-jeans",
+    description: "Our slim jean in a deep indigo rinse that dresses up as easily as down. Cotton denim with a touch of stretch.",
+  },
+  {
+    brand: Z, model: "Slim Jeans", colorway: "Black", color: "Black", gender: "MEN", category: "Jeans", price: 7900, sizes: "menWaist", images: ["jeans-black"], group: "slim-jeans",
+    description: "Our slim jean in solid black denim that holds its colour. Slim through the thigh with a slightly tapered leg.",
+  },
+  {
+    brand: Z, model: "Denim Trucker Jacket", colorway: "Dark Wash", color: "Blue", gender: "MEN", category: "Jackets & Coats", price: 9900, sizes: "menTops", images: ["trucker-dark"], group: "trucker-jacket",
+    description: "A classic trucker jacket in heavyweight dark denim, with button-flap chest pockets and adjustable waist tabs. Gets better with every wear.",
+  },
+  {
+    brand: Z, model: "Leather Biker Jacket", colorway: "Black", color: "Black", gender: "MEN", category: "Jackets & Coats", price: 29900, sizes: "menTops", images: ["biker-black", "biker-black-back"], group: "biker-jacket",
+    description: "An asymmetric-zip biker jacket in supple black lambskin, with a quilted lining, zip cuffs and a belted waist. A lifetime piece.",
+  },
+  {
+    brand: Z, model: "Leather Jacket", colorway: "Cognac", color: "Brown", gender: "MEN", category: "Jackets & Coats", price: 27900, sizes: "menTops", images: ["leather-cognac"], group: "leather-jacket",
+    description: "A clean-lined leather jacket in rich cognac with a shirt collar, zip front and side pockets. Develops a beautiful patina over time.",
+  },
+  {
+    brand: Z, model: "Wool Blazer", colorway: "Black", color: "Black", gender: "MEN", category: "Jackets & Coats", price: 17900, sizes: "menTops", images: ["blazer-black"], group: "wool-blazer",
+    description: "A single-breasted two-button blazer in fine wool, half lined with a soft shoulder. Wears with a suit trouser or dark jeans.",
+  },
+  {
+    brand: Z, model: "Check Blazer", colorway: "Grey Check", color: "Grey", gender: "MEN", category: "Jackets & Coats", price: 16900, sizes: "menTops", images: ["blazer-check"], group: "check-blazer",
+    description: "A relaxed blazer in a soft wool-blend check with patch pockets and a natural shoulder. Smart without trying too hard.",
+  },
+  {
+    brand: Z, model: "Zip-Through Hoodie", colorway: "Charcoal", color: "Grey", gender: "MEN", category: "Hoodies & Sweatshirts", price: 6500, sizes: "menTops", images: ["hoodie-charcoal"], group: "zip-hoodie",
+    description: "A heavyweight brushed-back fleece hoodie with a full zip, lined hood and kangaroo pockets. The everyday layer.",
+  },
+  {
+    brand: Z, model: "Short Sleeve Cotton Shirt", colorway: "White", color: "White", gender: "MEN", category: "Shirts", price: 4900, sizes: "menTops", images: ["shirt-white"], group: "short-sleeve-shirt",
+    description: "A crisp short-sleeve shirt in breathable cotton poplin with a point collar and a straight hem made to wear untucked.",
+  },
+  {
+    brand: Z, model: "Double Monk Strap Shoes", colorway: "Brown", color: "Brown", gender: "MEN", category: "Shoes", price: 15900, sizes: "menShoes", images: ["monk-strap"], group: "monk-strap",
+    description: "Polished calf leather double monks with burnished toes, twin buckle straps and a Goodyear-welted leather sole.",
+  },
+  {
+    brand: Z, model: "Brogue Oxford Shoes", colorway: "Brown", color: "Brown", gender: "MEN", category: "Shoes", price: 14900, sizes: "menShoes", images: ["brogues"], group: "brogue-oxford",
+    description: "Full-brogue oxfords in hand-finished brown leather with a wingtip toe and closed lacing. Smart enough for a suit, relaxed enough for chinos.",
+  },
+  {
+    brand: Z, model: "Leather Derby Shoes", colorway: "Tan", color: "Brown", gender: "MEN", category: "Shoes", price: 13900, sizes: "menShoes", images: ["derby-tan"], group: "derby-shoes",
+    description: "Open-laced derbies in smooth tan leather with a rounded toe and a light rubber-studded sole for everyday comfort.",
+  },
+  {
+    brand: Z, model: "Chelsea Boots", colorway: "Black", color: "Black", gender: "MEN", category: "Shoes", price: 16900, sizes: "menShoes", images: ["chelsea-black"], group: "chelsea-boots",
+    description: "Sleek pull-on Chelsea boots in black leather with elastic side gussets, a pull tab and a durable rubber sole.",
+  },
+  {
+    brand: Z, model: "Lace-Up Brogue Boots", colorway: "Tan", color: "Brown", gender: "MEN", category: "Shoes", price: 17900, sizes: "menShoes", images: ["brogue-boots"], group: "brogue-boots",
+    description: "Ankle boots with brogue detailing in rich tan leather, speed-hook lacing and a chunky commando sole for wet streets.",
+  },
+  {
+    brand: Z, model: "Penny Loafers", colorway: "Burgundy", color: "Red", gender: "MEN", category: "Shoes", price: 13900, sizes: "menShoes", images: ["penny-loafers"], group: "penny-loafers",
+    description: "Classic penny loafers in deep burgundy leather with a hand-sewn moc toe and a leather sole. Slip on with or without socks.",
+  },
+  {
+    brand: "Nike", model: "Air Max", colorway: "White/Orange", color: "White", gender: "MEN", category: "Shoes", price: 14000, sizes: "menShoes", images: ["nike-air-max"], group: "nike-air-max",
+    description: "Nike's visible-Air running icon with a breathable mesh upper, leather overlays and a cushioned heel unit for all-day comfort.",
+  },
+  {
+    brand: "Nike", model: "Free Run Flyknit", colorway: "University Red", color: "Red", gender: "MEN", category: "Shoes", price: 12000, sizes: "menShoes", images: ["nike-free-red"], group: "nike-free",
+    description: "A sock-like Flyknit upper on Nike's flexible Free sole, which moves with your foot for a barefoot-like ride.",
+  },
+  {
+    brand: Z, model: "Leather Belt", colorway: "Cognac", color: "Brown", gender: "MEN", category: "Accessories", price: 4500, sizes: "letters", images: ["belt-cognac"], group: "leather-belt",
+    description: "A 3.5 cm belt cut from full-grain vegetable-tanned leather with a brushed metal buckle. Ages beautifully.",
   },
 
   // --------------------------------------------------------------- unisex
   {
-    brand: E, model: "Heavyweight Graphic Hoodie", colorway: "Black", color: "Black", gender: "UNISEX", category: "Hoodies & Sweatshirts", price: 5500, sizes: "unisexTops", images: [26], group: "hoodie",
-    description: "A substantial brushed-back fleece hoodie with a tonal chest graphic, lined hood, kangaroo pocket and ribbed cuffs. Relaxed fit.",
+    brand: Z, model: "Classic Crew Tee", colorway: "White", color: "White", gender: "UNISEX", category: "Tops & T-Shirts", price: 2900, sizes: "unisexTops", images: ["tee-white", "tee-white-hanger"], group: "crew-tee",
+    description: "The perfect white tee: mid-weight combed cotton, a neat ribbed crew neck and a straight fit that holds its shape.",
   },
   {
-    brand: E, model: "Packable Windbreaker", colorway: "Stone", color: "Beige", gender: "UNISEX", category: "Jackets & Coats", price: 6900, sizes: "unisexTops", images: [35], group: "windbreaker",
-    description: "A featherweight wind- and shower-resistant jacket with a roll-away hood that packs into its own pocket.",
+    brand: Z, model: "Cable Knit Sweater", colorway: "Forest Green", color: "Green", gender: "UNISEX", category: "Knitwear", price: 9500, sizes: "unisexTops", images: ["cable-knit-green"], group: "cable-knit",
+    description: "A heritage cable-knit jumper in deep forest green lambswool with a ribbed crew neck. Warm, soft and made to last.",
   },
   {
-    brand: "New Era", model: "Atlanta Braves 59FIFTY Cap", colorway: "Black/Red", color: "Black", gender: "UNISEX", category: "Accessories", price: 4200, sizes: "capFit", images: [83], group: "new-era-braves",
-    description: "New Era's structured six-panel cap, worn on the field since 1954, with a flat visor and the Braves logo embroidered in 3D.",
+    brand: "Puma", model: "Leather Court Sneaker", colorway: "White", color: "White", gender: "UNISEX", category: "Shoes", price: 9900, sizes: "unisexShoes", images: ["puma-white"], group: "puma-court",
+    description: "A clean low-top court sneaker in smooth white leather with a perforated toe, padded collar and rubber cupsole.",
   },
   {
-    brand: "Ray-Ban", model: "New Wayfarer Sunglasses", colorway: "Black/Blue Gradient", color: "Black", gender: "UNISEX", category: "Accessories", price: 17300, sizes: "oneSize", images: [86], group: "rayban-new-wayfarer",
-    description: "A slightly smaller, softer take on the 1952 Wayfarer. Acetate frame with gradient lenses that give full UV protection.",
+    brand: Z, model: "Everyday Backpack", colorway: "Navy", color: "Blue", gender: "UNISEX", category: "Accessories", price: 6900, sizes: "oneSize", images: ["backpack-navy"], group: "everyday-backpack",
+    description: "A water-resistant canvas backpack with a padded laptop sleeve, a front zip pocket and comfortable padded straps.",
   },
   {
-    brand: E, model: "Metal Aviator Sunglasses", colorway: "Gold/Red", color: "Yellow", gender: "UNISEX", category: "Accessories", price: 4900, sizes: "oneSize", images: [88], group: "aviators",
-    description: "A classic teardrop aviator with a thin gold metal frame and tinted lenses with UV400 protection.",
+    brand: Z, model: "Leather Backpack", colorway: "Brown", color: "Brown", gender: "UNISEX", category: "Accessories", price: 15900, sizes: "oneSize", images: ["backpack-leather"], group: "leather-backpack",
+    description: "A rucksack in thick brown leather with buckled straps, a drawstring top and brass hardware. Softens and darkens with use.",
   },
   {
-    brand: "Polo Ralph Lauren", model: "Striped Cuff Beanie", colorway: "Navy/Cream", color: "Blue", gender: "UNISEX", category: "Accessories", price: 4950, sizes: "oneSize", images: [90], group: "rl-beanie",
-    description: "A ribbed knit beanie with a turned-up cuff, a contrast stripe and the Polo branding.",
+    brand: "Ray-Ban", model: "Original Wayfarer Classic", colorway: "Black", color: "Black", gender: "UNISEX", category: "Accessories", price: 16300, sizes: "oneSize", images: ["wayfarer"], group: "rayban-wayfarer",
+    description: "The 1952 shape that became a design classic: black acetate frame with green G-15 lenses and full UV protection.",
   },
   {
-    brand: E, model: "Crochet Beanie", colorway: "Cobalt", color: "Blue", gender: "UNISEX", category: "Accessories", price: 2500, sizes: "oneSize", images: [89], group: "crochet-beanie",
-    description: "A handmade-look crochet beanie in bright cobalt blue with a slouchy fit.",
+    brand: Z, model: "Aviator Sunglasses", colorway: "Gold", color: "Gold", gender: "UNISEX", category: "Accessories", price: 5900, sizes: "oneSize", images: ["aviator-gold"], group: "aviator",
+    description: "Teardrop aviators with a lightweight gold-tone metal frame, adjustable nose pads and UV400 lenses.",
   },
   {
-    brand: "Barbour", model: "Waxed Cotton Bucket Hat", colorway: "Black", color: "Black", gender: "UNISEX", category: "Accessories", price: 4900, sizes: "letters", images: [96], group: "barbour-bucket",
-    description: "Barbour's weatherproof waxed cotton made into a bucket hat with a tartan lining. Keeps the rain off in style.",
-  },
-  {
-    brand: "Polo Ralph Lauren", model: "Reversible Bucket Hat", colorway: "Red/Navy", color: "Red", gender: "UNISEX", category: "Accessories", price: 6800, sizes: "letters", images: [97], group: "rl-bucket",
-    description: "A cotton twill bucket hat that reverses from red to navy, finished with an embroidered Pony.",
-  },
-  {
-    brand: E, model: "Paisley Bucket Hat", colorway: "Brown Paisley", color: "Brown", gender: "UNISEX", category: "Accessories", price: 2900, sizes: "oneSize", images: [95], group: "paisley-bucket",
-    description: "A soft cotton bucket hat with an all-over retro paisley print.",
-  },
-  {
-    brand: E, model: "Leather Belt", colorway: "Brown", color: "Brown", gender: "UNISEX", category: "Accessories", price: 3900, sizes: "letters", images: [93], group: "belt",
-    description: "A 35 mm full-grain leather belt with a brushed-steel roller buckle. Made to be worn with jeans and chinos.",
-  },
-  {
-    brand: E, model: "Canvas Tote Bag", colorway: "Navy/Natural", color: "Blue", gender: "UNISEX", category: "Accessories", price: 2900, sizes: "oneSize", images: [94], group: "tote",
-    description: "A sturdy two-tone cotton canvas tote with long handles and room for a laptop, groceries or a beach towel.",
-  },
-  {
-    brand: E, model: "Check Wool Scarf", colorway: "Camel/Black/Red Check", color: "Beige", gender: "UNISEX", category: "Accessories", price: 4500, sizes: "oneSize", images: [81], group: "check-scarf",
-    description: "A soft brushed-wool scarf in a heritage check with fringed ends.",
-  },
-  {
-    brand: "HiMountain", model: "Hiker 50L Backpack", colorway: "Blue/Black", color: "Blue", gender: "UNISEX", category: "Accessories", price: 8900, sizes: "oneSize", images: [99], group: "himountain-hiker",
-    description: "A 50-litre trekking pack from the Polish outdoor brand, with an adjustable back system, hip belt, side pockets and a rain cover.",
+    brand: Z, model: "Round Sunglasses", colorway: "Black", color: "Black", gender: "UNISEX", category: "Accessories", price: 4900, sizes: "oneSize", images: ["sunglasses-round"], group: "round-sunglasses",
+    description: "Retro round sunglasses with a slim black frame and dark tinted UV400 lenses.",
   },
 ];

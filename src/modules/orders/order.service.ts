@@ -97,8 +97,14 @@ export async function checkout(userId: string, address: ShippingAddress) {
   }
 }
 
+/**
+ * A customer's order history: only orders they actually paid for (refunded
+ * ones stay visible as a record). Unpaid checkouts that were abandoned or are
+ * still awaiting payment are not purchases, so they are left out; they stay
+ * reachable by id from the payment page and expire on their own.
+ */
 export async function listOrders(userId: string, page: number, pageSize: number) {
-  const where = { userId };
+  const where = { userId, paymentStatus: { in: ["PAID", "REFUNDED"] as ("PAID" | "REFUNDED")[] } };
   const [total, rows] = await prisma.$transaction([
     prisma.order.count({ where }),
     prisma.order.findMany({ where, include: orderInclude, orderBy: { createdAt: "desc" }, ...skipTake(page, pageSize) }),
