@@ -96,3 +96,10 @@ Tests run against the separate `shoeshop_test` database. Each file truncates the
 ## Removing test data
 
 `npm run db:clean-test-data` previews what would be removed; `npm run db:clean-test-data -- --yes` deletes it: all orders (stock from orders that were not cancelled is restored), customer accounts other than `customer@shoeshop.test` (admins are kept), end-to-end test products ("E2E Tee …") and `@example.com` newsletter sign-ups. The catalog is kept. It refuses to run when `NODE_ENV=production`.
+
+## Security notes for deployment
+
+- Set `TRUST_PROXY` to the number of reverse proxies (load balancer, CDN) in front of the API, e.g. `1`. Keep it `0` when clients connect directly: otherwise a client could fake `X-Forwarded-For` to dodge the login rate limit.
+- Seeding with `NODE_ENV=production` requires `SEED_ADMIN_PASSWORD` and `SEED_CUSTOMER_PASSWORD`; the demo passwords are for local development only.
+- Admin routes re-check the role in the database on every request, so demoting or deleting an admin takes effect immediately.
+- Use a long random `JWT_SECRET` (at least 32 characters) and never commit `.env`.

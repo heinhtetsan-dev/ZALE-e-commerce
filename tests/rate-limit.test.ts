@@ -45,4 +45,19 @@ describe("rate limiting", () => {
     // Health checks are exempt so load balancers never get throttled.
     expect((await request(app).get("/api/v1/health")).status).toBe(200);
   });
+
+  it("cannot be bypassed by sending a fake X-Forwarded-For header", async () => {
+    // This client is already blocked (see above). Claiming a different IP in the
+    // header must not give it a fresh allowance: without a trusted proxy the
+    // header is ignored.
+    const statuses: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const res = await request(app)
+        .post("/api/v1/auth/login")
+        .set("X-Forwarded-For", `203.0.113.${i}`)
+        .send({ email: "spoof@test.dev", password: "wrong-password" });
+      statuses.push(res.status);
+    }
+    expect(statuses).toContain(429);
+  });
 });

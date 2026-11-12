@@ -28,6 +28,17 @@ describe("admin products", () => {
     expect((await api().post("/api/v1/admin/products").set(auth(token)).send({})).status).toBe(403);
   });
 
+  it("revokes admin access as soon as the account is demoted or deleted, even with a valid token", async () => {
+    const { user, token } = await createAdmin();
+    expect((await api().get("/api/v1/admin/products").set(auth(token))).status).toBe(200);
+
+    await prisma.user.update({ where: { id: user.id }, data: { role: "CUSTOMER" } });
+    expect((await api().get("/api/v1/admin/products").set(auth(token))).status).toBe(403);
+
+    await prisma.user.delete({ where: { id: user.id } });
+    expect((await api().get("/api/v1/admin/products").set(auth(token))).status).toBe(401);
+  });
+
   it("creates, updates and lists products including inactive ones", async () => {
     const { token } = await createAdmin();
     const r = await refs();

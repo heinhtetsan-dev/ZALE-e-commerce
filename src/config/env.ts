@@ -13,6 +13,12 @@ const schema = z
     DATABASE_URL: z.string().url(),
     JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
     JWT_EXPIRES_IN: z.string().default("1d"),
+    /**
+     * Number of reverse proxies (load balancer, CDN) in front of the API. Only
+     * then is X-Forwarded-For trusted for the client IP; with 0 a client could
+     * otherwise fake its IP and dodge rate limits.
+     */
+    TRUST_PROXY: z.coerce.number().int().min(0).max(10).default(0),
     CORS_ORIGINS: z
       .string()
       .default("http://localhost:5173")

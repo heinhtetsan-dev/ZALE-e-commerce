@@ -15,6 +15,11 @@ const rand = () => {
 };
 
 async function main() {
+  // The well-known demo passwords are for local development only: a production
+  // database must never get an admin account anyone can log in to.
+  if (process.env.NODE_ENV === "production" && (!process.env.SEED_ADMIN_PASSWORD || !process.env.SEED_CUSTOMER_PASSWORD)) {
+    throw new Error("In production set SEED_ADMIN_PASSWORD and SEED_CUSTOMER_PASSWORD (strong, unique) before seeding.");
+  }
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "Admin123!";
   const customerPassword = process.env.SEED_CUSTOMER_PASSWORD ?? "Customer123!";
 

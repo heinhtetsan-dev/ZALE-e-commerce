@@ -20,8 +20,9 @@ import { wishlistRouter } from "./modules/wishlist/wishlist.routes.js";
 export function createApp() {
   const app = express();
   app.disable("x-powered-by");
-  // Behind a load balancer / CDN: trust the first proxy so rate limiting sees client IPs.
-  app.set("trust proxy", 1);
+  // Trust X-Forwarded-For only from the configured number of proxies, so
+  // rate limiting sees real client IPs and cannot be fooled by a fake header.
+  app.set("trust proxy", env.TRUST_PROXY);
 
   app.use(helmet());
   app.use(
