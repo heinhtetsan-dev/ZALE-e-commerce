@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/context'
 import { useCart } from '../cart/useCart'
 import { addressSchema, type AddressInput } from '../checkout/addressSchema'
+import { LAST_ADDRESS_KEY } from '../checkout/savedAddress'
 import { fieldErrorsOf } from '../lib/forms'
 import { OrderSummary } from '../components/OrderSummary'
 import { estimateShipping } from '../lib/shipping'
@@ -13,7 +14,7 @@ import { api, ApiError, errorMessage } from '../lib/api'
 import { formatSize, money } from '../lib/format'
 import type { Order, PaymentSession, StockShortage } from '../lib/types'
 
-const ADDRESS_KEY = 'shoeshop.lastAddress'
+const ADDRESS_KEY = LAST_ADDRESS_KEY
 
 const loadAddress = (name: string): AddressInput => {
   try {

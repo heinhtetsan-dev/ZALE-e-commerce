@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { guestCart } from '../cart/guestCart'
+import { forgetSavedAddress } from '../checkout/savedAddress'
 import { api, setUnauthorizedHandler, tokenStore } from '../lib/api'
 import type { ServerCart, User } from '../lib/types'
 import { AuthContext, type AuthState } from './context'
@@ -24,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const endSession = useCallback(() => {
     tokenStore.set(null)
     setToken(null)
+    forgetSavedAddress()
     // Drop every cached private resource (cart, orders, wishlist, admin data).
     queryClient.removeQueries({ predicate: (q) => !['products', 'product', 'facets', 'reviews'].includes(String(q.queryKey[0])) })
   }, [queryClient])
