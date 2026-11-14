@@ -94,7 +94,7 @@ This spec lives at the workspace root and is versioned in its own small Git repo
 - Customers: list/search customer accounts with order count, amount spent and review count; view an account's recent orders and reviews; disable and re-enable an account. A disabled account cannot sign in (told so only after the correct password) and its existing sessions are rejected on their next request. Admin accounts cannot be disabled here.
 - Reviews: list/search all reviews (text, product, customer; filter by rating) and delete any review; the product rating is recomputed.
 - Sales dashboard: revenue and paid order count for a date range (default last 30 days), average order value, orders by status, revenue per day, top 5 products by units, low-stock variants (stock ≤ 3).
-- Image upload: `POST /admin/uploads/presign` returns a presigned S3-compatible PUT URL and the public CDN URL when storage is configured; otherwise admins paste image URLs.
+- Image upload: on the product edit page admins upload photos (button or drag and drop; JPEG/PNG/WebP/AVIF, max 5 MB each, max 8 per product), reorder them (first = main photo) and remove them; pasting image links is still possible. The server checks the real file type from its bytes. Photos go to S3-compatible storage when configured, otherwise to the API server's disk (`UPLOAD_DIR`, served at `/api/v1/uploads/…`; single-server setups only). `POST /admin/uploads/presign` remains for direct-to-S3 uploads.
 
 ## 4. Data model (PostgreSQL via Prisma)
 
@@ -186,6 +186,8 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 - `GET /admin/customers?q&status=active|disabled&page&pageSize` (items include `orderCount`, `totalSpentCents`, `reviewCount`, `disabledAt`), `GET /admin/customers/:id` (with latest 20 orders and reviews), `PATCH /admin/customers/:id` `{ disabled: boolean }`
 - `GET /admin/reviews?q&rating&page&pageSize` (items include `product` and `author` with email), `DELETE /admin/reviews/:id` → 204
 - `GET /admin/summary?from&to` (ISO dates; default last 30 days; max 1 year) → `{ revenueCents, paidOrders, averageOrderCents, awaitingShipment, ordersByStatus, revenueByDay[], topProducts[5], lowStock[10] }`
+- `POST /admin/uploads` raw image body with `Content-Type: image/jpeg|png|webp|avif` (≤ 5 MB) → 201 `{ key, url }`; 400 if the bytes are not one of those image types, 413 if too large. `key` is stored in `images`.
+- `GET /uploads/*` serves locally stored uploads (public, cached for a year, sandboxed CSP).
 - `POST /admin/uploads/presign` `{ contentType, fileName }` → `{ uploadUrl, key, publicUrl }` (PUT URL valid 5 minutes; 501 if storage not configured). The returned `key` is stored in `images`.
 - `GET /admin/brands`, `GET /admin/categories` (also public via facets)
 
@@ -224,7 +226,7 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 
 ## 8. Configuration
 
-Back-End `.env` (see `backend/.env.example`): `DATABASE_URL, PORT, NODE_ENV, JWT_SECRET, JWT_EXPIRES_IN, CORS_ORIGINS, PAYMENTS_MODE, STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, CDN_BASE_URL, S3_*, RATE_LIMIT_*, ORDER_PAYMENT_TIMEOUT_MINUTES, SHIPPING_FLAT_CENTS, FREE_SHIPPING_THRESHOLD_CENTS`.
+Back-End `.env` (see `backend/.env.example`): `DATABASE_URL, PORT, NODE_ENV, JWT_SECRET, JWT_EXPIRES_IN, CORS_ORIGINS, PAYMENTS_MODE, STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, CDN_BASE_URL, S3_*, UPLOAD_DIR, RATE_LIMIT_*, ORDER_PAYMENT_TIMEOUT_MINUTES, SHIPPING_FLAT_CENTS, FREE_SHIPPING_THRESHOLD_CENTS`.
 
 Front-End `.env` (see `frontend/.env.example`): `VITE_API_URL`. In development it is the relative path `/api/v1` and the Vite dev/preview server proxies `/api` to the API (`API_PROXY_TARGET`, default `http://localhost:4000`), so the browser makes same-origin calls whether the site is opened via `localhost`, `127.0.0.1` or a LAN IP. Production builds set the API's public URL, which must be listed in the API's `CORS_ORIGINS`.
 
@@ -242,3 +244,4 @@ Databases must use UTF-8 encoding so names in any script (Burmese, Chinese, acce
 - v1.8 — renamed to ZALE (house label "ZALE Essentials"); new 46-item catalog with professional product-only photos (no faces) from Unsplash plus a store photo; Shoes category under Men / Women (EU sizes) with no separate navigation; color swatches removed from cards, product page and filters; animated bag drawer; order history lists paid orders only; e2e purchases use throwaway shoppers.
 - v1.9 — security hardening: X-Forwarded-For trusted only from a configured number of proxies (`TRUST_PROXY`, default 0) so rate limits cannot be bypassed; admin role re-checked in the database on every admin request; seeding refuses demo passwords in production; the saved shipping address is forgotten on logout.
 - v2.0 — admin moderation: cancel and refund orders (with restock), customer list with disable/enable (blocks sign-in and live sessions), review moderation; `Order.refundedAt`, `User.disabledAt`. Sessions are now checked against the database on every authenticated request.
+- v2.1 — admin photo upload on the product edit page (upload/drag and drop, reorder, remove); `POST /admin/uploads` stores to S3 when configured, else local disk served under `/api/v1/uploads`.
