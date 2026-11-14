@@ -25,7 +25,7 @@ export function mockApi(overrides: Record<string, Handler | { status?: number; b
     const url = new URL(String(input), 'http://localhost')
     const method = init?.method ?? 'GET'
     const path = url.pathname.replace(/^\/api\/v1/, '')
-    const body = init?.body ? JSON.parse(String(init.body)) : undefined
+    const body = init?.body instanceof Blob ? init.body : init?.body ? JSON.parse(String(init.body)) : undefined
     calls.push({ method, path, body })
     const entry = handlers[`${method} ${path}`]
     const result = typeof entry === 'function' ? entry({ method, url, body }) : entry

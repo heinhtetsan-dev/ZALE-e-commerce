@@ -5,6 +5,7 @@ import { FormField } from '../components/FormField'
 import { ErrorBox, FieldError, Notice, Spinner } from '../components/ui'
 import { api, ApiError, errorMessage } from '../lib/api'
 import { fieldErrorsOf } from '../lib/forms'
+import { ProductImages } from './ProductImages'
 import { productFormSchema, variantsSchema, type ProductFormValues } from './productForm'
 import type { AdminProduct, Lookup } from './types'
 
@@ -48,6 +49,8 @@ function ProductForm({ product, brands, categories }: { product?: AdminProduct; 
   const [values, setValues] = useState<ProductFormValues>(product ? toForm(product) : emptyForm)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saved, setSaved] = useState(false)
+  // The API returns stored refs and resolved URLs in the same order; pair them for thumbnails.
+  const previews = Object.fromEntries((product?.imageRefs ?? []).map((ref, i) => [ref, product!.images[i]]))
 
   const save = useMutation({
     mutationFn: (body: unknown) =>
@@ -68,6 +71,16 @@ function ProductForm({ product, brands, categories }: { product?: AdminProduct; 
   const set = (key: keyof ProductFormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setSaved(false)
     setValues({ ...values, [key]: e.target.value })
+  }
+
+  const imageList = values.images
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  // Uploads finish one by one, so update from the latest state, not this render's.
+  const setImages = (next: string[]) => {
+    setSaved(false)
+    setValues((v) => ({ ...v, images: next.join('\n') }))
   }
 
   const submit = (e: React.FormEvent) => {
@@ -144,13 +157,14 @@ function ProductForm({ product, brands, categories }: { product?: AdminProduct; 
         <textarea id="description" rows={4} className="input" value={values.description} onChange={set('description')} aria-invalid={!!errors.description} />
         <FieldError message={errors.description} />
       </div>
-      <div>
-        <label className="label" htmlFor="images">
-          Images (one CDN URL or object key per line)
+      <ProductImages value={imageList} onChange={setImages} previews={previews} error={errors.images} />
+      <details className="text-sm">
+        <summary className="cursor-pointer text-stone-600">Paste image links instead</summary>
+        <label className="label mt-2" htmlFor="images">
+          Image links (one https URL or CDN key per line)
         </label>
         <textarea id="images" rows={3} className="input font-mono text-xs" value={values.images} onChange={set('images')} placeholder="https://cdn.example.com/products/jacket.jpg" aria-invalid={!!errors.images} />
-        <FieldError message={errors.images} />
-      </div>
+      </details>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField id="imageCredit" label="Photo credit (required by CC licenses)" placeholder="Photo: Jane Doe, CC BY-SA 4.0" value={values.imageCredit} error={errors.imageCredit} onChange={set('imageCredit')} />
         <FormField id="imageSourceUrl" label="Photo source URL" placeholder="https://commons.wikimedia.org/wiki/File:…" value={values.imageSourceUrl} error={errors.imageSourceUrl} onChange={set('imageSourceUrl')} />

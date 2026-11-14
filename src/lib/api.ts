@@ -70,17 +70,17 @@ export const toQueryString = (query?: Query) => {
   return s ? `?${s}` : ''
 }
 
-export async function api<T>(path: string, init: { method?: string; body?: unknown; query?: Query; signal?: AbortSignal } = {}): Promise<T> {
+export async function api<T>(path: string, init: { method?: string; body?: unknown; file?: Blob; query?: Query; signal?: AbortSignal } = {}): Promise<T> {
   const token = tokenStore.get()
   let res: Response
   try {
     res = await fetch(`${API_URL}${path}${toQueryString(init.query)}`, {
       method: init.method ?? 'GET',
       headers: {
-        ...(init.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(init.file ? { 'Content-Type': init.file.type } : init.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+      body: init.file ?? (init.body !== undefined ? JSON.stringify(init.body) : undefined),
       signal: init.signal,
     })
   } catch (err) {
