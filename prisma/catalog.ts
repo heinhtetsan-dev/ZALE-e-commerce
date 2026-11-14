@@ -99,20 +99,20 @@ export const catalog: CatalogProduct[] = [
     description: "A clean long-sleeve top in soft, mid-weight cotton jersey with a close crew neck. The layering piece that goes under everything.",
   },
   {
-    brand: Z, model: "Sleeveless Shell Top", colorway: "Black", color: "Black", gender: "WOMEN", category: "Tops & T-Shirts", price: 3900, sizes: "womenTops", images: ["shell-top-black"], group: "shell-top",
-    description: "A simple sleeveless top with a high round neck, cut from smooth crepe that drapes well. Tuck it into tailoring or wear it loose over jeans.",
+    brand: Z, model: "Ribbed Crop Top", colorway: "Lilac", color: "Purple", gender: "WOMEN", category: "Tops & T-Shirts", price: 3900, sizes: "womenTops", images: ["ribbed-top-lilac"], group: "ribbed-crop-top",
+    description: "A short-sleeved top in a soft, textured rib with a wide round neck and a cropped hem. Made to pair with high-rise jeans or trousers.",
   },
   {
-    brand: Z, model: "Lace Midi Dress", colorway: "Ivory", color: "White", gender: "WOMEN", category: "Dresses", price: 12900, sizes: "womenTops", images: ["lace-dress"], group: "lace-midi",
-    description: "A romantic midi dress in delicate floral lace over a soft lining, with a fitted bodice and a gently flared skirt.",
+    brand: Z, model: "Belted Linen Dress", colorway: "Ivory", color: "White", gender: "WOMEN", category: "Dresses", price: 8900, sizes: "womenTops", images: ["linen-dress-ivory"], group: "belted-linen-dress",
+    description: "A relaxed linen-blend dress with a boat neck, cap sleeves and a braided rope belt at the waist. Cool and easy for warm days.",
   },
   {
-    brand: Z, model: "Embroidered Sleeveless Dress", colorway: "Floral", color: "Multicolor", gender: "WOMEN", category: "Dresses", price: 7900, sizes: "womenTops", images: ["embroidered-dress"], group: "embroidered-dress",
-    description: "A breezy sleeveless dress with embroidered flowers across the bodice and a swingy skirt. Lightweight cotton for warm days.",
+    brand: Z, model: "Tie-Waist Shirt Dress", colorway: "Terracotta", color: "Orange", gender: "WOMEN", category: "Dresses", price: 7900, sizes: "womenTops", images: ["shirt-dress-terracotta", "shirt-dress-terracotta-back"], group: "tie-waist-shirt-dress",
+    description: "A short-sleeved shirt dress in lightweight cotton with a button front, a patch pocket and a self-tie belt that cinches the waist.",
   },
   {
     brand: Z, model: "Strappy Sundress", colorway: "Mint Green", color: "Green", gender: "WOMEN", category: "Dresses", price: 6900, sizes: "womenTops", images: ["sundress-mint"], group: "strappy-sundress",
-    description: "A light summer dress with thin adjustable straps, a smocked back and a relaxed skirt that falls just below the knee.",
+    description: "A light summer dress with thin straps, an elasticated waist and a relaxed skirt that falls to mid-calf.",
   },
   {
     brand: Z, model: "Tailored Blazer", colorway: "White", color: "White", gender: "WOMEN", category: "Jackets & Coats", price: 14900, sizes: "womenTops", images: ["blazer-white"], group: "tailored-blazer-w",
