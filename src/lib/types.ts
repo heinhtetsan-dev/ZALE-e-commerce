@@ -139,6 +139,7 @@ export interface Order {
   shippedAt: string | null
   deliveredAt: string | null
   cancelledAt: string | null
+  refundedAt?: string | null
   customer?: { id: string; name: string; email: string }
 }
 

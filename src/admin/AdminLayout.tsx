@@ -18,6 +18,12 @@ export function AdminLayout() {
           <NavLink to="/admin/orders" className={tab}>
             Orders
           </NavLink>
+          <NavLink to="/admin/customers" className={tab}>
+            Customers
+          </NavLink>
+          <NavLink to="/admin/reviews" className={tab}>
+            Reviews
+          </NavLink>
         </nav>
       </div>
       <Outlet />

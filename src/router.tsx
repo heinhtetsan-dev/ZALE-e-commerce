@@ -61,6 +61,8 @@ const pageRoutes: RouteObject[] = [
       { path: 'products/new', lazy: () => import('./admin/AdminProductEditPage').then((m) => ({ Component: m.AdminProductEditPage })) },
       { path: 'products/:id', lazy: () => import('./admin/AdminProductEditPage').then((m) => ({ Component: m.AdminProductEditPage })) },
       { path: 'orders', lazy: () => import('./admin/AdminOrdersPage').then((m) => ({ Component: m.AdminOrdersPage })) },
+      { path: 'customers', lazy: () => import('./admin/AdminCustomersPage').then((m) => ({ Component: m.AdminCustomersPage })) },
+      { path: 'reviews', lazy: () => import('./admin/AdminReviewsPage').then((m) => ({ Component: m.AdminReviewsPage })) },
     ],
   },
   { path: '*', element: <NotFoundPage /> },

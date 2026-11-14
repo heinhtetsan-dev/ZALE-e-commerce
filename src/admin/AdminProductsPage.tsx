@@ -1,34 +1,12 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Pagination } from '../components/Pagination'
 import { EmptyState, ErrorBox, ProductImage, Spinner } from '../components/ui'
 import { api, errorMessage } from '../lib/api'
 import { genderLabel, money } from '../lib/format'
 import type { Page } from '../lib/types'
+import { AdminSearchBox } from './AdminSearchBox'
 import type { AdminProduct } from './types'
-
-function SearchBox({ initial, onSearch }: { initial: string; onSearch: (q: string) => void }) {
-  const [q, setQ] = useState(initial)
-  return (
-    <form
-      role="search"
-      className="flex flex-1 gap-2"
-      onSubmit={(e) => {
-        e.preventDefault()
-        onSearch(q.trim())
-      }}
-    >
-      <label className="flex-1">
-        <span className="sr-only">Search products</span>
-        <input type="search" className="input" placeholder="Search name, slug or brand…" value={q} onChange={(e) => setQ(e.target.value)} />
-      </label>
-      <button type="submit" className="btn-secondary">
-        Search
-      </button>
-    </form>
-  )
-}
 
 export function AdminProductsPage() {
   const [params, setParams] = useSearchParams()
@@ -44,7 +22,7 @@ export function AdminProductsPage() {
     <div>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <h1 className="text-2xl font-bold sm:mr-4 sm:text-3xl">Products</h1>
-        <SearchBox key={q} initial={q} onSearch={(v) => setParams(v ? { q: v } : {})} />
+        <AdminSearchBox key={q} initial={q} label="Search products" placeholder="Search name, slug or brand…" onSearch={(v) => setParams(v ? { q: v } : {})} />
         <Link to="/admin/products/new" className="btn-accent">
           + New product
         </Link>

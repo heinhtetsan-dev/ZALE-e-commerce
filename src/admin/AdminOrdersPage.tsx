@@ -38,11 +38,82 @@ function NextAction({ order }: { order: AdminOrder }) {
           {advance.isPending ? 'Updating…' : action.label}
         </button>
       ) : (
-        <span className="text-xs text-stone-500">{order.status === 'PENDING' ? 'Awaiting payment' : '—'}</span>
+        <span className="text-xs text-stone-500">{order.status === 'PENDING' ? 'Awaiting payment' : order.paymentStatus === 'REFUNDED' ? 'Refunded' : '—'}</span>
       )}
       {advance.isError && (
         <p className="mt-1 text-xs text-red-600" role="alert">
           {errorMessage(advance.error)}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Cancel (before shipping, refunds a paid order) and refund (after shipping).
+ * Both ask for confirmation inline because they move money and stock.
+ */
+export function CancelRefundActions({ order }: { order: AdminOrder }) {
+  const queryClient = useQueryClient()
+  const [confirming, setConfirming] = useState<'cancel' | 'refund' | null>(null)
+  const [restock, setRestock] = useState(false)
+  const action = useMutation({
+    mutationFn: (kind: 'cancel' | 'refund') =>
+      api<AdminOrder>(`/admin/orders/${order.id}/${kind}`, { method: 'POST', body: kind === 'refund' ? { restock } : {} }),
+    onSuccess: () => setConfirming(null),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin'] })
+    },
+  })
+
+  const canCancel = order.status === 'PENDING'
+  const canRefund = order.paymentStatus === 'PAID' && (order.status === 'SHIPPED' || order.status === 'DELIVERED')
+  if (!canCancel && !canRefund) return null
+  const paid = order.paymentStatus === 'PAID'
+
+  if (!confirming) {
+    return (
+      <div className="flex flex-wrap gap-2">
+        {canCancel && (
+          <button type="button" className="btn-secondary px-3 py-2" onClick={() => setConfirming('cancel')}>
+            {paid ? 'Cancel & refund' : 'Cancel order'}
+          </button>
+        )}
+        {canRefund && (
+          <button type="button" className="btn-secondary px-3 py-2" onClick={() => setConfirming('refund')}>
+            Refund
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-lg border border-red-200 bg-red-50 p-3" role="group" aria-label={confirming === 'cancel' ? 'Confirm cancellation' : 'Confirm refund'}>
+      <p className="text-sm text-red-900">
+        {confirming === 'cancel'
+          ? paid
+            ? `Cancel order #${order.number}? The customer is refunded ${money(order.totalCents)} and the items go back into stock.`
+            : `Cancel order #${order.number}? The items go back into stock and it can no longer be paid.`
+          : `Refund ${money(order.totalCents)} for order #${order.number}? This cannot be undone.`}
+      </p>
+      {confirming === 'refund' && (
+        <label className="mt-2 flex items-center gap-2 text-sm text-red-900">
+          <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} />
+          The items came back — put them back in stock
+        </label>
+      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" className="btn-danger px-3 py-2" onClick={() => action.mutate(confirming)} disabled={action.isPending}>
+          {action.isPending ? 'Working…' : confirming === 'cancel' ? 'Yes, cancel order' : `Refund ${money(order.totalCents)}`}
+        </button>
+        <button type="button" className="btn-ghost px-3 py-2" onClick={() => setConfirming(null)} disabled={action.isPending}>
+          Keep order
+        </button>
+      </div>
+      {action.isError && (
+        <p className="mt-2 text-xs text-red-700" role="alert">
+          {errorMessage(action.error)}
         </p>
       )}
     </div>
@@ -84,6 +155,20 @@ function OrderRow({ order }: { order: AdminOrder }) {
             {order.shippingAddress.fullName}, {order.shippingAddress.line1}
             {order.shippingAddress.line2 ? `, ${order.shippingAddress.line2}` : ''}, {order.shippingAddress.postalCode} {order.shippingAddress.city}, {order.shippingAddress.country}
           </address>
+          <div className="space-y-3 sm:col-span-2">
+            <p className="text-xs text-stone-500">
+              {[
+                order.paidAt && `Paid ${formatDateTime(order.paidAt)}`,
+                order.shippedAt && `Shipped ${formatDateTime(order.shippedAt)}`,
+                order.deliveredAt && `Delivered ${formatDateTime(order.deliveredAt)}`,
+                order.cancelledAt && `Cancelled ${formatDateTime(order.cancelledAt)}`,
+                order.refundedAt && `Refunded ${formatDateTime(order.refundedAt)}`,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+            <CancelRefundActions order={order} />
+          </div>
         </div>
       )}
     </li>
