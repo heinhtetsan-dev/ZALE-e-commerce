@@ -89,7 +89,10 @@ This spec lives at the workspace root and is versioned in its own small Git repo
 ### 3.8 Admin
 - Product CRUD (name, slug, description, brand, category, color, price, images, active flag). Delete is a soft delete (`isActive=false`) when the product is referenced by orders, otherwise a hard delete.
 - Per-size stock management: add sizes, set absolute stock per size (validated ≥ 0), remove sizes without orders.
-- Orders: list/filter by status; status transitions **`PENDING → SHIPPED → DELIVERED`** (only forward, one step at a time; `PENDING → SHIPPED` requires payment `PAID`). `CANCELLED` is set only by the system/customer for unpaid orders.
+- Orders: list/filter by status; status transitions **`PENDING → SHIPPED → DELIVERED`** (only forward, one step at a time; `PENDING → SHIPPED` requires payment `PAID`). `CANCELLED` is set by the system/customer for unpaid orders, or by an admin.
+- Cancel and refund: an admin can cancel any order that has not shipped (`PENDING`); stock is returned and a paid order is refunded in full (`paymentStatus=REFUNDED`). A shipped or delivered paid order can be refunded instead (status unchanged), optionally returning its items to stock. The state change, restock and provider refund run in one transaction, so a failed refund changes nothing. Refunded orders no longer count as revenue.
+- Customers: list/search customer accounts with order count, amount spent and review count; view an account's recent orders and reviews; disable and re-enable an account. A disabled account cannot sign in (told so only after the correct password) and its existing sessions are rejected on their next request. Admin accounts cannot be disabled here.
+- Reviews: list/search all reviews (text, product, customer; filter by rating) and delete any review; the product rating is recomputed.
 - Sales dashboard: revenue and paid order count for a date range (default last 30 days), average order value, orders by status, revenue per day, top 5 products by units, low-stock variants (stock ≤ 3).
 - Image upload: `POST /admin/uploads/presign` returns a presigned S3-compatible PUT URL and the public CDN URL when storage is configured; otherwise admins paste image URLs.
 
@@ -99,13 +102,13 @@ Money is stored as integer cents (`Int`). IDs are UUIDs. All timestamps are `tim
 
 | Model | Key fields | Constraints / indexes |
 |---|---|---|
-| `User` | email, passwordHash, name, role (`CUSTOMER`/`ADMIN`) | unique email |
+| `User` | email, passwordHash, name, role (`CUSTOMER`/`ADMIN`), disabledAt? | unique email; index on (role, createdAt) |
 | `Brand` | name, slug | unique name, slug |
 | `Category` | name, slug | unique name, slug |
 | `Product` | slug, name, description, brandId, categoryId, color, colorway?, gender (`MEN`/`WOMEN`/`UNISEX`), styleGroup?, priceCents, images[], imageCredit?, imageSourceUrl?, isActive, ratingAvg, ratingCount | unique slug; indexes on brandId, categoryId, color, gender, styleGroup, priceCents, createdAt, ratingAvg, isActive; trigram GIN index on name for search |
 | `ProductVariant` | productId, size, stock | unique (productId, size); index (size, stock); **CHECK (stock >= 0)** |
 | `CartItem` | userId, variantId, quantity | unique (userId, variantId); CHECK quantity 1–10 |
-| `Order` | userId, status, paymentStatus, subtotalCents, shippingCents, totalCents, shipping address fields, stripePaymentIntentId, paidAt, shippedAt, deliveredAt, cancelledAt | index (userId, createdAt), (status, createdAt), (paymentStatus, createdAt); unique stripePaymentIntentId |
+| `Order` | userId, status, paymentStatus, subtotalCents, shippingCents, totalCents, shipping address fields, stripePaymentIntentId, paidAt, shippedAt, deliveredAt, cancelledAt, refundedAt | index (userId, createdAt), (status, createdAt), (paymentStatus, createdAt); unique stripePaymentIntentId |
 | `OrderItem` | orderId, variantId, productId, productName, size, unitPriceCents, quantity | index productId, variantId |
 | `Review` | userId, productId, rating, title, comment | unique (userId, productId); CHECK rating 1–5; index (productId, createdAt) |
 | `WishlistItem` | userId, productId | unique (userId, productId) |
@@ -179,6 +182,9 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 - `PUT /admin/products/:id/variants` `{ variants: [{ size, stock }] }` — upsert sizes and set absolute stock; sizes omitted are removed if never ordered (else stock set to 0)
 - `PATCH /admin/variants/:id` `{ stock }`
 - `GET /admin/orders?status&q&page&pageSize` (`q` matches customer name/email or recipient; items include `customer`), `PATCH /admin/orders/:id/status` `{ status: "SHIPPED" | "DELIVERED" }`
+- `POST /admin/orders/:id/cancel` — `PENDING` orders only; refunds if paid; 409 otherwise. `POST /admin/orders/:id/refund` `{ restock?: boolean }` — paid `SHIPPED`/`DELIVERED` orders only
+- `GET /admin/customers?q&status=active|disabled&page&pageSize` (items include `orderCount`, `totalSpentCents`, `reviewCount`, `disabledAt`), `GET /admin/customers/:id` (with latest 20 orders and reviews), `PATCH /admin/customers/:id` `{ disabled: boolean }`
+- `GET /admin/reviews?q&rating&page&pageSize` (items include `product` and `author` with email), `DELETE /admin/reviews/:id` → 204
 - `GET /admin/summary?from&to` (ISO dates; default last 30 days; max 1 year) → `{ revenueCents, paidOrders, averageOrderCents, awaitingShipment, ordersByStatus, revenueByDay[], topProducts[5], lowStock[10] }`
 - `POST /admin/uploads/presign` `{ contentType, fileName }` → `{ uploadUrl, key, publicUrl }` (PUT URL valid 5 minutes; 501 if storage not configured). The returned `key` is stored in `images`.
 - `GET /admin/brands`, `GET /admin/categories` (also public via facets)
@@ -212,7 +218,9 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 | `/wishlist` | Wishlist |
 | `/admin` | Sales dashboard |
 | `/admin/products`, `/admin/products/new`, `/admin/products/:id` | Product CRUD and per-size stock |
-| `/admin/orders` | Order list and status updates |
+| `/admin/orders` | Order list, status updates, cancel and refund |
+| `/admin/customers` | Customer accounts: search, purchases, disable/enable |
+| `/admin/reviews` | Review moderation: search, filter by rating, delete |
 
 ## 8. Configuration
 
@@ -233,3 +241,4 @@ Databases must use UTF-8 encoding so names in any script (Burmese, Chinese, acce
 - v1.7 — LUNE storefront redesign (home page, `/shop`, product page, header/footer, help pages), bag drawer and quick add, newsletter sign-up endpoint, `sizes`/`swatches` on product cards, house label renamed to "LUNE Essentials" with house items named without the label; whole-dollar prices shown without cents.
 - v1.8 — renamed to ZALE (house label "ZALE Essentials"); new 46-item catalog with professional product-only photos (no faces) from Unsplash plus a store photo; Shoes category under Men / Women (EU sizes) with no separate navigation; color swatches removed from cards, product page and filters; animated bag drawer; order history lists paid orders only; e2e purchases use throwaway shoppers.
 - v1.9 — security hardening: X-Forwarded-For trusted only from a configured number of proxies (`TRUST_PROXY`, default 0) so rate limits cannot be bypassed; admin role re-checked in the database on every admin request; seeding refuses demo passwords in production; the saved shipping address is forgotten on logout.
+- v2.0 — admin moderation: cancel and refund orders (with restock), customer list with disable/enable (blocks sign-in and live sessions), review moderation; `Order.refundedAt`, `User.disabledAt`. Sessions are now checked against the database on every authenticated request.
