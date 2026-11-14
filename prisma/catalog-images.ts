@@ -1,4 +1,4 @@
-// Product photography from Unsplash (free to use under the Unsplash License).
+// Product photography from Unsplash and Pexels (free to use under their licenses).
 // Every photo was reviewed: product-only shots, no faces, no third-party logos
 // on house-label items. Served from Unsplash's image CDN, cropped to 3:4.
 export interface CatalogImage {
@@ -13,6 +13,12 @@ const unsplash = (id: string): CatalogImage => ({
   source: "https://unsplash.com/license",
 });
 
+const pexels = (id: number): CatalogImage => ({
+  url: `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1000&h=1333`,
+  credit: "Pexels",
+  source: "https://www.pexels.com/license/",
+});
+
 /** Site-relative images are served by the storefront itself (frontend/public). */
 const local = (path: string, credit: string): CatalogImage => ({ url: path, credit, source: "" });
 
@@ -20,11 +26,10 @@ export const catalogImages: Record<string, CatalogImage> = {
   "knit-ivory": unsplash("photo-1621198059871-0d5f9b449233"),
   "knit-rust": unsplash("photo-1773747203295-dc002c421c33"),
   "longsleeve-white": unsplash("photo-1620799140408-edc6dcb6d633"),
-  "linen-dress-ivory": unsplash("photo-1789110520302-3df8ce0410f0"),
-  "shirt-dress-terracotta": unsplash("photo-1789110853872-f416085557fa"),
-  "shirt-dress-terracotta-back": unsplash("photo-1789110853833-bc1a883da2d6"),
-  "sundress-mint": unsplash("photo-1789110519607-6176d668fb72"),
-  "ribbed-top-lilac": unsplash("photo-1789111161316-1cf7e753b4ad"),
+  "lace-dress-ivory": pexels(18533667),
+  "shirt-dress-stripe": pexels(4428388),
+  "slip-dress-cobalt": pexels(31871752),
+  "henley-top-mocha": pexels(33482422),
   "blazer-white": unsplash("photo-1784822041387-98638a7c08c3"),
   "coat-mustard": unsplash("photo-1565532070333-43edd7d75c90"),
   "denim-set": unsplash("photo-1708523842501-1619478cea1f"),

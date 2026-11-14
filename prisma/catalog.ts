@@ -99,20 +99,20 @@ export const catalog: CatalogProduct[] = [
     description: "A clean long-sleeve top in soft, mid-weight cotton jersey with a close crew neck. The layering piece that goes under everything.",
   },
   {
-    brand: Z, model: "Ribbed Crop Top", colorway: "Lilac", color: "Purple", gender: "WOMEN", category: "Tops & T-Shirts", price: 3900, sizes: "womenTops", images: ["ribbed-top-lilac"], group: "ribbed-crop-top",
-    description: "A short-sleeved top in a soft, textured rib with a wide round neck and a cropped hem. Made to pair with high-rise jeans or trousers.",
+    brand: Z, model: "Ribbed Henley Top", colorway: "Mocha", color: "Brown", gender: "WOMEN", category: "Tops & T-Shirts", price: 3900, sizes: "womenTops", images: ["henley-top-mocha"], group: "ribbed-henley",
+    description: "A fitted top in soft stretch rib with a short button placket at the neck. An easy layer under jackets or on its own with jeans.",
   },
   {
-    brand: Z, model: "Belted Linen Dress", colorway: "Ivory", color: "White", gender: "WOMEN", category: "Dresses", price: 8900, sizes: "womenTops", images: ["linen-dress-ivory"], group: "belted-linen-dress",
-    description: "A relaxed linen-blend dress with a boat neck, cap sleeves and a braided rope belt at the waist. Cool and easy for warm days.",
+    brand: Z, model: "Sleeveless Lace Dress", colorway: "Ivory", color: "White", gender: "WOMEN", category: "Dresses", price: 12900, sizes: "womenTops", images: ["lace-dress-ivory"], group: "sleeveless-lace-dress",
+    description: "A sleeveless dress with a layered lace bodice, a keyhole button at the back and a clean A-line skirt. Fully lined.",
   },
   {
-    brand: Z, model: "Tie-Waist Shirt Dress", colorway: "Terracotta", color: "Orange", gender: "WOMEN", category: "Dresses", price: 7900, sizes: "womenTops", images: ["shirt-dress-terracotta", "shirt-dress-terracotta-back"], group: "tie-waist-shirt-dress",
-    description: "A short-sleeved shirt dress in lightweight cotton with a button front, a patch pocket and a self-tie belt that cinches the waist.",
+    brand: Z, model: "Belted Shirt Dress", colorway: "Pale Blue Stripe", color: "Blue", gender: "WOMEN", category: "Dresses", price: 7900, sizes: "womenTops", images: ["shirt-dress-stripe"], group: "belted-shirt-dress",
+    description: "A relaxed long-sleeved shirt dress in a soft pinstripe, with a button front, roll-up cuffs and a white belt to define the waist.",
   },
   {
-    brand: Z, model: "Strappy Sundress", colorway: "Mint Green", color: "Green", gender: "WOMEN", category: "Dresses", price: 6900, sizes: "womenTops", images: ["sundress-mint"], group: "strappy-sundress",
-    description: "A light summer dress with thin straps, an elasticated waist and a relaxed skirt that falls to mid-calf.",
+    brand: Z, model: "Satin Slip Dress", colorway: "Cobalt", color: "Blue", gender: "WOMEN", category: "Dresses", price: 8900, sizes: "womenTops", images: ["slip-dress-cobalt"], group: "satin-slip-dress",
+    description: "A bias-cut slip dress in fluid satin with thin adjustable straps. Dress it up with heels or down with boots and a knit.",
   },
   {
     brand: Z, model: "Tailored Blazer", colorway: "White", color: "White", gender: "WOMEN", category: "Jackets & Coats", price: 14900, sizes: "womenTops", images: ["blazer-white"], group: "tailored-blazer-w",
