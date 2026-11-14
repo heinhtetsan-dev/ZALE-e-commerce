@@ -82,6 +82,22 @@ export const adminOrderQuery = z.object({
 
 export const orderStatusBody = z.object({ status: z.enum(["SHIPPED", "DELIVERED"]) });
 
+export const refundBody = z.object({ restock: z.boolean().default(false) });
+
+export const customerQuery = z.object({
+  q: z.string().trim().max(100).optional(),
+  status: z.enum(["active", "disabled"]).optional(),
+  ...paginationQuery(20),
+});
+
+export const customerDisabledBody = z.object({ disabled: z.boolean() });
+
+export const adminReviewQuery = z.object({
+  q: z.string().trim().max(100).optional(),
+  rating: z.coerce.number().int().min(1).max(5).optional(),
+  ...paginationQuery(20),
+});
+
 export const summaryQuery = z
   .object({
     from: z.coerce.date().optional(),

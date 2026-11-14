@@ -132,6 +132,22 @@ export async function voidPaymentIntent(orderId: string) {
   if (REUSABLE.includes(intent.status) && intent.status !== "processing") await stripe().paymentIntents.cancel(intent.id);
 }
 
+/**
+ * Refunds an order's payment in full at the provider. Mock payments have no
+ * provider, so there is nothing to call. The idempotency key (shared with the
+ * orphan-payment refund) means a retry can never refund twice.
+ */
+export async function refundPayment(order: { id: string; stripePaymentIntentId: string | null }) {
+  if (env.PAYMENTS_MODE !== "stripe" || !order.stripePaymentIntentId) return;
+  try {
+    await stripe().refunds.create({ payment_intent: order.stripePaymentIntentId }, { idempotencyKey: `refund-${order.stripePaymentIntentId}` });
+  } catch (err) {
+    if (err instanceof Stripe.errors.StripeError && err.code === "charge_already_refunded") return;
+    logger.error({ err, orderId: order.id }, "Stripe refund failed");
+    throw new AppError("PAYMENT_ERROR", "The refund could not be issued by the payment provider. Nothing was changed; please try again.");
+  }
+}
+
 /** Local development only: simulates a successful card payment. */
 export async function payMock(orderId: string) {
   if (env.PAYMENTS_MODE !== "mock") throw new AppError("FORBIDDEN", "Mock payments are disabled");

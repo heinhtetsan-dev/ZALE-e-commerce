@@ -27,6 +27,8 @@ export async function login(input: z.infer<typeof loginBody>) {
   const user = await prisma.user.findUnique({ where: { email: input.email } });
   const ok = await bcrypt.compare(input.password, user?.passwordHash ?? DUMMY_HASH);
   if (!user || !ok) throw new AppError("UNAUTHENTICATED", "Incorrect email or password");
+  // Only revealed after the correct password, so it can't be used to probe accounts.
+  if (user.disabledAt) throw new AppError("FORBIDDEN", "This account has been disabled. Please contact customer service.");
   return session(user);
 }
 

@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/lib/prisma.js";
-import { api, auth, createAdmin, createCustomer, createProduct, resetDb } from "./helpers.js";
+import { api, auth, createAdmin, createCustomer, createProduct, createUser, resetDb } from "./helpers.js";
 
 const address = { fullName: "A", line1: "1 St", city: "C", postalCode: "1", country: "US" };
 
@@ -139,6 +139,148 @@ describe("admin orders", () => {
     await api().patch(`/api/v1/admin/orders/${a}/status`).set(auth(token)).send({ status: "SHIPPED" });
     expect((await api().get("/api/v1/admin/orders?status=SHIPPED").set(auth(token))).body.total).toBe(1);
     expect((await api().get("/api/v1/admin/orders").set(auth(token))).body.total).toBe(2);
+  });
+});
+
+describe("admin cancel and refund", () => {
+  const stockOf = async (variantId: string) => (await prisma.productVariant.findUniqueOrThrow({ where: { id: variantId } })).stock;
+
+  it("cancels a paid order before shipping: refunds it and puts the stock back", async () => {
+    const { token } = await createAdmin();
+    const p = await createProduct({ variants: [{ size: "M", stock: 5 }] });
+    const id = await placePaidOrder(p.variants[0]!.id, 2);
+    expect(await stockOf(p.variants[0]!.id)).toBe(3);
+
+    const res = await api().post(`/api/v1/admin/orders/${id}/cancel`).set(auth(token));
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ status: "CANCELLED", paymentStatus: "REFUNDED" });
+    expect(res.body.refundedAt).toBeTruthy();
+    expect(await stockOf(p.variants[0]!.id)).toBe(5);
+
+    // Refunded revenue no longer counts, and a second cancel is refused without restocking again.
+    expect((await api().get("/api/v1/admin/summary").set(auth(token))).body.revenueCents).toBe(0);
+    expect((await api().post(`/api/v1/admin/orders/${id}/cancel`).set(auth(token))).status).toBe(409);
+    expect(await stockOf(p.variants[0]!.id)).toBe(5);
+  });
+
+  it("cancels an unpaid order without a refund", async () => {
+    const { token } = await createAdmin();
+    const p = await createProduct({ variants: [{ size: "M", stock: 5 }] });
+    const c = await createCustomer();
+    await api().post("/api/v1/cart/items").set(auth(c.token)).send({ variantId: p.variants[0]!.id, quantity: 1 });
+    const { body } = await api().post("/api/v1/orders").set(auth(c.token)).send({ shippingAddress: address });
+
+    const res = await api().post(`/api/v1/admin/orders/${body.order.id}/cancel`).set(auth(token));
+    expect(res.body).toMatchObject({ status: "CANCELLED", paymentStatus: "UNPAID", refundedAt: null });
+    expect(await stockOf(p.variants[0]!.id)).toBe(5);
+  });
+
+  it("refunds shipped orders instead of cancelling them, restocking only when asked", async () => {
+    const { token } = await createAdmin();
+    const p = await createProduct({ variants: [{ size: "M", stock: 5 }] });
+    const a = await placePaidOrder(p.variants[0]!.id);
+    const b = await placePaidOrder(p.variants[0]!.id);
+    for (const id of [a, b]) await api().patch(`/api/v1/admin/orders/${id}/status`).set(auth(token)).send({ status: "SHIPPED" });
+    expect(await stockOf(p.variants[0]!.id)).toBe(3);
+
+    expect((await api().post(`/api/v1/admin/orders/${a}/cancel`).set(auth(token))).status).toBe(409);
+
+    const kept = await api().post(`/api/v1/admin/orders/${a}/refund`).set(auth(token)).send({});
+    expect(kept.body).toMatchObject({ status: "SHIPPED", paymentStatus: "REFUNDED" });
+    expect(await stockOf(p.variants[0]!.id)).toBe(3);
+
+    const returned = await api().post(`/api/v1/admin/orders/${b}/refund`).set(auth(token)).send({ restock: true });
+    expect(returned.body.paymentStatus).toBe("REFUNDED");
+    expect(await stockOf(p.variants[0]!.id)).toBe(4);
+
+    expect((await api().post(`/api/v1/admin/orders/${a}/refund`).set(auth(token)).send({})).status).toBe(409);
+  });
+
+  it("does not refund orders that have not shipped or were never paid", async () => {
+    const { token } = await createAdmin();
+    const p = await createProduct();
+    const id = await placePaidOrder(p.variants[0]!.id);
+    const res = await api().post(`/api/v1/admin/orders/${id}/refund`).set(auth(token)).send({});
+    expect(res.status).toBe(409);
+    expect(res.body.error.message).toMatch(/Cancel it instead/);
+  });
+
+  it("is admin only", async () => {
+    const c = await createCustomer();
+    const p = await createProduct();
+    const id = await placePaidOrder(p.variants[0]!.id);
+    expect((await api().post(`/api/v1/admin/orders/${id}/cancel`).set(auth(c.token))).status).toBe(403);
+  });
+});
+
+describe("admin customers", () => {
+  it("lists customers with their purchases, and searches by name or email", async () => {
+    const { token } = await createAdmin();
+    const p = await createProduct({ priceCents: 12000 });
+    await placePaidOrder(p.variants[0]!.id);
+    const res = await api().get("/api/v1/admin/customers").set(auth(token));
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1); // the admin is not listed
+    expect(res.body.items[0]).toMatchObject({ orderCount: 1, reviewCount: 0, totalSpentCents: 12000, disabledAt: null });
+    expect(res.body.items[0]).not.toHaveProperty("passwordHash");
+
+    const email = res.body.items[0].email as string;
+    expect((await api().get(`/api/v1/admin/customers?q=${email.slice(0, 10)}`).set(auth(token))).body.total).toBe(1);
+    expect((await api().get("/api/v1/admin/customers?q=nobody-here").set(auth(token))).body.total).toBe(0);
+
+    const detail = await api().get(`/api/v1/admin/customers/${res.body.items[0].id}`).set(auth(token));
+    expect(detail.body.orders).toHaveLength(1);
+  });
+
+  it("disables an account: no sign-in, existing sessions end, and it can be re-enabled", async () => {
+    const { token } = await createAdmin();
+    const { user, password } = await createUser();
+    const session = (await api().post("/api/v1/auth/login").send({ email: user.email, password })).body.token as string;
+    expect((await api().get("/api/v1/auth/me").set(auth(session))).status).toBe(200);
+
+    const off = await api().patch(`/api/v1/admin/customers/${user.id}`).set(auth(token)).send({ disabled: true });
+    expect(off.body.disabledAt).toBeTruthy();
+    expect((await api().get("/api/v1/auth/me").set(auth(session))).status).toBe(401);
+    expect((await api().get("/api/v1/cart").set(auth(session))).status).toBe(401);
+    const blocked = await api().post("/api/v1/auth/login").send({ email: user.email, password });
+    expect(blocked.status).toBe(403);
+    expect(blocked.body.error.message).toMatch(/disabled/);
+    // A wrong password still gets the generic answer, so the status of an account isn't revealed.
+    expect((await api().post("/api/v1/auth/login").send({ email: user.email, password: "wrong-password" })).status).toBe(401);
+
+    expect((await api().get("/api/v1/admin/customers?status=disabled").set(auth(token))).body.total).toBe(1);
+
+    const on = await api().patch(`/api/v1/admin/customers/${user.id}`).set(auth(token)).send({ disabled: false });
+    expect(on.body.disabledAt).toBeNull();
+    expect((await api().post("/api/v1/auth/login").send({ email: user.email, password })).status).toBe(200);
+  });
+
+  it("cannot disable admins", async () => {
+    const { user, token } = await createAdmin();
+    expect((await api().patch(`/api/v1/admin/customers/${user.id}`).set(auth(token)).send({ disabled: true })).status).toBe(409);
+  });
+});
+
+describe("admin reviews", () => {
+  it("lists every review with its author and product, and deletes one, updating the rating", async () => {
+    const { token } = await createAdmin();
+    const p = await createProduct({ name: "Linen Shirt" });
+    for (const [rating, comment] of [[1, "Spam spam buy cheap watches"], [5, "Lovely fabric"]] as const) {
+      const c = await createCustomer();
+      await api().post(`/api/v1/products/${p.id}/reviews`).set(auth(c.token)).send({ rating, comment });
+    }
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: p.id } })).ratingCount).toBe(2);
+
+    const list = await api().get("/api/v1/admin/reviews").set(auth(token));
+    expect(list.body.total).toBe(2);
+    expect(list.body.items[0]).toMatchObject({ product: { name: "Linen Shirt" }, author: { email: expect.any(String) } });
+    const spam = await api().get("/api/v1/admin/reviews?q=watches").set(auth(token));
+    expect(spam.body.total).toBe(1);
+    expect((await api().get("/api/v1/admin/reviews?rating=5").set(auth(token))).body.total).toBe(1);
+
+    expect((await api().delete(`/api/v1/admin/reviews/${spam.body.items[0].id}`).set(auth(token))).status).toBe(204);
+    expect(await prisma.product.findUniqueOrThrow({ where: { id: p.id } })).toMatchObject({ ratingCount: 1, ratingAvg: 5 });
+    expect((await api().delete(`/api/v1/admin/reviews/${spam.body.items[0].id}`).set(auth(token))).status).toBe(404);
   });
 });
 

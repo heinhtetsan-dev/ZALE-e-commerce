@@ -132,13 +132,18 @@ export async function cancelUnpaidOrder(tx: Tx, orderId: string) {
     UPDATE "Order" SET "status" = 'CANCELLED', "cancelledAt" = now(), "updatedAt" = now()
     WHERE "id" = ${orderId}::uuid AND "status" = 'PENDING' AND "paymentStatus" = 'UNPAID'`;
   if (flipped === 0) return false;
+  await restockOrder(tx, orderId);
+  return true;
+}
+
+/** Puts every item of the order back into stock. Callers must have just flipped the order's state in `tx`, so this runs once. */
+export async function restockOrder(tx: Tx, orderId: string) {
   const items = await tx.orderItem.findMany({ where: { orderId }, orderBy: { variantId: "asc" } });
   for (const item of items) {
     await tx.$executeRaw`
       UPDATE "ProductVariant" SET "stock" = "stock" + ${item.quantity}, "updatedAt" = now()
       WHERE "id" = ${item.variantId}::uuid`;
   }
-  return true;
 }
 
 export async function cancelOrder(userId: string, orderId: string) {

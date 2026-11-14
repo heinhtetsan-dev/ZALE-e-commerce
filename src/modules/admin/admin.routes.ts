@@ -1,14 +1,19 @@
 import { Router } from "express";
 import { prisma } from "../../lib/prisma.js";
-import { authenticate, requireRole } from "../../middleware/auth.js";
+import { authenticate, requireRole, userId } from "../../middleware/auth.js";
+import { deleteReview } from "../reviews/review.service.js";
 import {
   adminOrderQuery,
   adminProductQuery,
+  adminReviewQuery,
+  customerDisabledBody,
+  customerQuery,
   idParam,
   orderStatusBody,
   presignBody,
   productBody,
   productUpdateBody,
+  refundBody,
   summaryQuery,
   variantsBody,
   variantStockBody,
@@ -62,6 +67,37 @@ adminRouter.get("/orders", async (req, res) => {
 adminRouter.patch("/orders/:id/status", async (req, res) => {
   const { status } = orderStatusBody.parse(req.body);
   res.json(await admin.updateOrderStatus(idParam.parse(req.params).id, status));
+});
+
+adminRouter.post("/orders/:id/cancel", async (req, res) => {
+  res.json(await admin.cancelOrderAsAdmin(idParam.parse(req.params).id));
+});
+
+adminRouter.post("/orders/:id/refund", async (req, res) => {
+  const { restock } = refundBody.parse(req.body ?? {});
+  res.json(await admin.refundOrderAsAdmin(idParam.parse(req.params).id, restock));
+});
+
+adminRouter.get("/customers", async (req, res) => {
+  res.json(await admin.listCustomers(customerQuery.parse(req.query)));
+});
+
+adminRouter.get("/customers/:id", async (req, res) => {
+  res.json(await admin.getCustomer(idParam.parse(req.params).id));
+});
+
+adminRouter.patch("/customers/:id", async (req, res) => {
+  const { disabled } = customerDisabledBody.parse(req.body);
+  res.json(await admin.setCustomerDisabled(idParam.parse(req.params).id, disabled));
+});
+
+adminRouter.get("/reviews", async (req, res) => {
+  res.json(await admin.listAdminReviews(adminReviewQuery.parse(req.query)));
+});
+
+adminRouter.delete("/reviews/:id", async (req, res) => {
+  await deleteReview(idParam.parse(req.params).id, userId(req), "ADMIN");
+  res.status(204).end();
 });
 
 adminRouter.get("/summary", async (req, res) => {

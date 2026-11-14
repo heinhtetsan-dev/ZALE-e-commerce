@@ -10,33 +10,34 @@ declare module "express-serve-static-core" {
 }
 
 /**
- * Stateless authentication: the JWT carries the user id and role, so any API
- * instance can authorise a request without a session store.
+ * Verifies the JWT, then confirms the account still exists and is not
+ * disabled. The role is taken from the database, not the token, so an admin
+ * who is demoted, or a customer whose account is disabled, loses access on
+ * their next request instead of when the token expires. One primary-key
+ * lookup per authenticated request.
  */
-export const authenticate: RequestHandler = (req, _res, next) => {
+export const authenticate: RequestHandler = async (req, _res, next) => {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) throw new AppError("UNAUTHENTICATED", "Authentication required");
+  let payload: TokenPayload;
   try {
-    req.auth = verifyToken(header.slice(7));
+    payload = verifyToken(header.slice(7));
   } catch {
     throw new AppError("UNAUTHENTICATED", "Invalid or expired token");
   }
+  const user = await prisma.user.findUnique({ where: { id: payload.sub }, select: { role: true, disabledAt: true } });
+  if (!user) throw new AppError("UNAUTHENTICATED", "Account no longer exists");
+  if (user.disabledAt) throw new AppError("UNAUTHENTICATED", "This account has been disabled");
+  req.auth = { ...payload, role: user.role };
   next();
 };
 
-/**
- * Role check against the database, not just the token: an admin who is
- * demoted or deleted loses access immediately instead of when the token
- * expires. One primary-key lookup, only on role-protected routes.
- */
+/** Only valid behind `authenticate`, which has already refreshed the role from the database. */
 export const requireRole =
   (...roles: Role[]): RequestHandler =>
-  async (req, _res, next) => {
+  (req, _res, next) => {
     if (!req.auth) throw new AppError("UNAUTHENTICATED", "Authentication required");
-    const user = await prisma.user.findUnique({ where: { id: req.auth.sub }, select: { role: true } });
-    if (!user) throw new AppError("UNAUTHENTICATED", "Account no longer exists");
-    if (!roles.includes(user.role)) throw new AppError("FORBIDDEN", "You do not have permission to do this");
-    req.auth.role = user.role;
+    if (!roles.includes(req.auth.role)) throw new AppError("FORBIDDEN", "You do not have permission to do this");
     next();
   };
 

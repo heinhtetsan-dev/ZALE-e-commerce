@@ -40,12 +40,16 @@ model User {
   passwordHash String
   name         String
   role         Role           @default(CUSTOMER)
+  /// Set when an admin disables the account: it can no longer sign in or use its session.
+  disabledAt   DateTime?      @db.Timestamptz(3)
   createdAt    DateTime       @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime       @updatedAt @db.Timestamptz(3)
   cartItems    CartItem[]
   orders       Order[]
   reviews      Review[]
   wishlist     WishlistItem[]
+
+  @@index([role, createdAt])
 }
 
 model Brand {
@@ -152,6 +156,7 @@ model Order {
   shippedAt             DateTime?     @db.Timestamptz(3)
   deliveredAt           DateTime?     @db.Timestamptz(3)
   cancelledAt           DateTime?     @db.Timestamptz(3)
+  refundedAt            DateTime?     @db.Timestamptz(3)
   createdAt             DateTime      @default(now()) @db.Timestamptz(3)
   updatedAt             DateTime      @updatedAt @db.Timestamptz(3)
   user                  User          @relation(fields: [userId], references: [id])

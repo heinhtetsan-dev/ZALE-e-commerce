@@ -42,6 +42,7 @@ export const serializeOrder = (o: OrderWithItems) => ({
   shippedAt: o.shippedAt,
   deliveredAt: o.deliveredAt,
   cancelledAt: o.cancelledAt,
+  refundedAt: o.refundedAt,
 });
 
 export type SerializedOrder = ReturnType<typeof serializeOrder>;

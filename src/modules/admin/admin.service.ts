@@ -3,11 +3,14 @@ import { env } from "../../config/env.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { AppError, conflict, notFound } from "../../lib/errors.js";
 import { skipTake, toPage } from "../../lib/pagination.js";
+import { logger } from "../../lib/logger.js";
 import { prisma } from "../../lib/prisma.js";
 import { orderInclude, serializeOrder } from "../orders/order.serializer.js";
+import { cancelUnpaidOrder, restockOrder } from "../orders/order.service.js";
+import { refundPayment, voidPaymentIntent } from "../payments/payment.service.js";
 import { imageUrl, productCardInclude, serializeProductDetail } from "../products/product.serializer.js";
 import type { z } from "zod";
-import type { adminOrderQuery, adminProductQuery, productBody, productUpdateBody, variantsBody } from "./admin.schemas.js";
+import type { adminOrderQuery, adminProductQuery, adminReviewQuery, customerQuery, productBody, productUpdateBody, variantsBody } from "./admin.schemas.js";
 
 const slugify = (s: string) =>
   s
@@ -166,6 +169,157 @@ export async function updateOrderStatus(orderId: string, status: "SHIPPED" | "DE
   if (!count) throw conflict("The order was changed by someone else. Refresh and try again.");
   const updated = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: { ...orderInclude, ...customerSelect } });
   return { ...serializeOrder(updated), customer: updated.user };
+}
+
+async function adminOrder(orderId: string) {
+  const o = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: { ...orderInclude, ...customerSelect } });
+  return { ...serializeOrder(o), customer: o.user };
+}
+
+const changedConcurrently = () => conflict("The order was changed by someone else. Refresh and try again.");
+
+/**
+ * Cancels an order that has not shipped. Stock goes back on the shelf; a paid
+ * order is refunded in full. The state flip, restock and refund share one
+ * transaction: the conditional UPDATE locks the order row (so it can't be
+ * shipped meanwhile), and if the provider refuses the refund nothing changes.
+ */
+export async function cancelOrderAsAdmin(orderId: string) {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw notFound("Order");
+  if (order.status !== "PENDING") {
+    throw conflict(order.status === "CANCELLED" ? "This order is already cancelled" : "Shipped orders cannot be cancelled. Refund the order instead.");
+  }
+
+  if (order.paymentStatus === "UNPAID") {
+    if (!(await prisma.$transaction((tx) => cancelUnpaidOrder(tx, orderId)))) throw changedConcurrently();
+    await voidPaymentIntent(orderId).catch((err) => logger.warn({ err, orderId }, "Could not void the payment intent"));
+    return adminOrder(orderId);
+  }
+
+  await prisma.$transaction(
+    async (tx) => {
+      const flipped = await tx.$executeRaw`
+        UPDATE "Order" SET "status" = 'CANCELLED', "paymentStatus" = 'REFUNDED', "cancelledAt" = now(), "refundedAt" = now(), "updatedAt" = now()
+        WHERE "id" = ${orderId}::uuid AND "status" = 'PENDING' AND "paymentStatus" = 'PAID'`;
+      if (flipped === 0) throw changedConcurrently();
+      await restockOrder(tx, orderId);
+      await refundPayment(order);
+    },
+    { maxWait: 10_000, timeout: 30_000 },
+  );
+  return adminOrder(orderId);
+}
+
+/**
+ * Refunds a paid order after it has shipped (e.g. a return). The order keeps
+ * its shipping status; `restock` puts the items back when they came back
+ * in sellable condition.
+ */
+export async function refundOrderAsAdmin(orderId: string, restock: boolean) {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw notFound("Order");
+  if (order.paymentStatus !== "PAID") throw conflict(order.paymentStatus === "REFUNDED" ? "This order is already refunded" : "Only paid orders can be refunded");
+  if (order.status === "PENDING") throw conflict("This order has not shipped yet. Cancel it instead, which also refunds it.");
+
+  await prisma.$transaction(
+    async (tx) => {
+      const flipped = await tx.$executeRaw`
+        UPDATE "Order" SET "paymentStatus" = 'REFUNDED', "refundedAt" = now(), "updatedAt" = now()
+        WHERE "id" = ${orderId}::uuid AND "paymentStatus" = 'PAID' AND "status" IN ('SHIPPED', 'DELIVERED')`;
+      if (flipped === 0) throw changedConcurrently();
+      if (restock) await restockOrder(tx, orderId);
+      await refundPayment(order);
+    },
+    { maxWait: 10_000, timeout: 30_000 },
+  );
+  return adminOrder(orderId);
+}
+
+// ---------------------------------------------------------------- customers
+
+const purchased = { paymentStatus: { in: ["PAID", "REFUNDED"] as ("PAID" | "REFUNDED")[] } };
+
+export async function listCustomers(q: z.infer<typeof customerQuery>) {
+  const where: Prisma.UserWhereInput = {
+    role: "CUSTOMER",
+    ...(q.status === "active" ? { disabledAt: null } : q.status === "disabled" ? { disabledAt: { not: null } } : {}),
+    ...(q.q ? { OR: [{ email: { contains: q.q, mode: "insensitive" } }, { name: { contains: q.q, mode: "insensitive" } }] } : {}),
+  };
+  const [total, rows] = await prisma.$transaction([
+    prisma.user.count({ where }),
+    prisma.user.findMany({
+      where,
+      select: { id: true, name: true, email: true, createdAt: true, disabledAt: true, _count: { select: { orders: { where: purchased }, reviews: true } } },
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      ...skipTake(q.page, q.pageSize),
+    }),
+  ]);
+  const spent = await prisma.order.groupBy({ by: ["userId"], where: { userId: { in: rows.map((r) => r.id) }, paymentStatus: "PAID" }, _sum: { totalCents: true } });
+  const spentBy = new Map(spent.map((s) => [s.userId, s._sum.totalCents ?? 0]));
+  const items = rows.map(({ _count, ...u }) => ({ ...u, orderCount: _count.orders, reviewCount: _count.reviews, totalSpentCents: spentBy.get(u.id) ?? 0 }));
+  return toPage(items, total, q.page, q.pageSize);
+}
+
+export async function getCustomer(id: string) {
+  const user = await prisma.user.findFirst({
+    where: { id, role: "CUSTOMER" },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+      disabledAt: true,
+      orders: { include: orderInclude, orderBy: { createdAt: "desc" }, take: 20 },
+      reviews: { include: { product: { select: { id: true, name: true, slug: true } } }, orderBy: { createdAt: "desc" }, take: 20 },
+    },
+  });
+  if (!user) throw notFound("Customer");
+  const { orders, reviews, ...profile } = user;
+  return {
+    ...profile,
+    orders: orders.map(serializeOrder),
+    reviews: reviews.map((r) => ({ id: r.id, rating: r.rating, title: r.title, comment: r.comment, createdAt: r.createdAt, product: r.product })),
+  };
+}
+
+/** Disabling blocks sign-in and ends existing sessions on their next request (see `authenticate`). Admin accounts are managed separately. */
+export async function setCustomerDisabled(id: string, disabled: boolean) {
+  const user = await prisma.user.findUnique({ where: { id }, select: { role: true, disabledAt: true } });
+  if (!user) throw notFound("Customer");
+  if (user.role !== "CUSTOMER") throw conflict("Admin accounts cannot be disabled here");
+  await prisma.user.update({ where: { id }, data: { disabledAt: disabled ? (user.disabledAt ?? new Date()) : null } });
+  return getCustomer(id);
+}
+
+// ---------------------------------------------------------------- reviews
+
+export async function listAdminReviews(q: z.infer<typeof adminReviewQuery>) {
+  const where: Prisma.ReviewWhereInput = {
+    ...(q.rating ? { rating: q.rating } : {}),
+    ...(q.q
+      ? {
+          OR: [
+            { title: { contains: q.q, mode: "insensitive" } },
+            { comment: { contains: q.q, mode: "insensitive" } },
+            { product: { name: { contains: q.q, mode: "insensitive" } } },
+            { user: { email: { contains: q.q, mode: "insensitive" } } },
+            { user: { name: { contains: q.q, mode: "insensitive" } } },
+          ],
+        }
+      : {}),
+  };
+  const [total, rows] = await prisma.$transaction([
+    prisma.review.count({ where }),
+    prisma.review.findMany({
+      where,
+      include: { product: { select: { id: true, name: true, slug: true } }, user: { select: { id: true, name: true, email: true } } },
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      ...skipTake(q.page, q.pageSize),
+    }),
+  ]);
+  const items = rows.map((r) => ({ id: r.id, rating: r.rating, title: r.title, comment: r.comment, createdAt: r.createdAt, product: r.product, author: r.user }));
+  return toPage(items, total, q.page, q.pageSize);
 }
 
 // ---------------------------------------------------------------- dashboard
