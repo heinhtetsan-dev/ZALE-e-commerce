@@ -8,6 +8,7 @@ import { prisma } from "./lib/prisma.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { globalLimiter } from "./middleware/rate-limit.js";
 import { adminRouter } from "./modules/admin/admin.routes.js";
+import { uploadDir } from "./modules/admin/upload.service.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { cartRouter } from "./modules/cart/cart.routes.js";
 import { orderRouter } from "./modules/orders/order.routes.js";
@@ -36,6 +37,23 @@ export function createApp() {
   app.use(pinoHttp({ logger, autoLogging: env.NODE_ENV !== "test" }));
 
   const api = Router();
+  // Product photos uploaded by admins (when S3 isn't configured). File names
+  // are random UUIDs and never change, so browsers may cache them forever.
+  // Served before the rate limiter: a product grid loads many images at once.
+  api.use(
+    "/uploads",
+    express.static(uploadDir(), {
+      index: false,
+      dotfiles: "deny",
+      immutable: true,
+      maxAge: "365d",
+      setHeaders: (res) => {
+        // Let a storefront on another origin show them, but never run them as a page.
+        res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+        res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
+      },
+    }),
+  );
   api.use(globalLimiter);
   api.use("/payments/webhook", stripeWebhookRouter);
   api.use(express.json({ limit: "100kb" }));

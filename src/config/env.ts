@@ -33,6 +33,8 @@ const schema = z
     S3_ENDPOINT: optional,
     S3_ACCESS_KEY_ID: optional,
     S3_SECRET_ACCESS_KEY: optional,
+    /** Where admin photo uploads are stored when S3 is not configured. */
+    UPLOAD_DIR: z.string().default("uploads"),
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(15 * 60 * 1000),
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(1000),
     AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),

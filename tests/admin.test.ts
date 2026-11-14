@@ -1,4 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { rm } from "node:fs/promises";
+import path from "node:path";
 import { prisma } from "../src/lib/prisma.js";
 import { api, auth, createAdmin, createCustomer, createProduct, createUser, resetDb } from "./helpers.js";
 
@@ -308,5 +310,54 @@ describe("admin dashboard", () => {
     const { token } = await createAdmin();
     const res = await api().post("/api/v1/admin/uploads/presign").set(auth(token)).send({ fileName: "a.jpg", contentType: "image/jpeg" });
     expect(res.status).toBe(501);
+  });
+});
+
+describe("admin photo uploads", () => {
+  // Smallest valid PNG header + some bytes; only the signature is checked.
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 1)]);
+
+  afterAll(() => rm(path.resolve(".test-uploads"), { recursive: true, force: true }));
+
+  it("stores an image and serves it back", async () => {
+    const { token } = await createAdmin();
+    const res = await api().post("/api/v1/admin/uploads").set(auth(token)).set("Content-Type", "image/png").send(png);
+    expect(res.status).toBe(201);
+    expect(res.body.key).toMatch(/^\/api\/v1\/uploads\/products\/\d{4}-\d{2}\/[0-9a-f-]{36}\.png$/);
+
+    const file = await api().get(res.body.key);
+    expect(file.status).toBe(200);
+    expect(file.headers["content-type"]).toBe("image/png");
+    expect(file.headers["content-security-policy"]).toContain("sandbox");
+    expect(Buffer.compare(file.body as Buffer, png)).toBe(0);
+
+    // The returned key is accepted as a product image.
+    const product = await api()
+      .post("/api/v1/admin/products")
+      .set(auth(token))
+      .send({ name: "Uploaded Tee", description: "d", ...(await refs()), color: "White", priceCents: 1000, images: [res.body.key] });
+    expect(product.status).toBe(201);
+    expect(product.body.images).toEqual([res.body.key]);
+  });
+
+  it("rejects files that aren't really images, whatever their Content-Type says", async () => {
+    const { token } = await createAdmin();
+    const html = await api().post("/api/v1/admin/uploads").set(auth(token)).set("Content-Type", "image/jpeg").send(Buffer.from("<html><script>alert(1)</script>"));
+    expect(html.status).toBe(400);
+    const gif = await api().post("/api/v1/admin/uploads").set(auth(token)).set("Content-Type", "image/gif").send(Buffer.from("GIF89a"));
+    expect(gif.status).toBe(400);
+  });
+
+  it("rejects files over 5 MB", async () => {
+    const { token } = await createAdmin();
+    const big = Buffer.concat([png, Buffer.alloc(5 * 1024 * 1024)]);
+    const res = await api().post("/api/v1/admin/uploads").set(auth(token)).set("Content-Type", "image/png").send(big);
+    expect(res.status).toBe(413);
+  });
+
+  it("is admin-only", async () => {
+    const { token } = await createCustomer();
+    const res = await api().post("/api/v1/admin/uploads").set(auth(token)).set("Content-Type", "image/png").send(png);
+    expect(res.status).toBe(403);
   });
 });

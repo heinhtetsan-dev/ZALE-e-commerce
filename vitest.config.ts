@@ -20,6 +20,7 @@ export default defineConfig({
       RATE_LIMIT_MAX: "100000",
       AUTH_RATE_LIMIT_MAX: "100000",
       ORDER_SWEEP_INTERVAL_SECONDS: "0",
+      UPLOAD_DIR: ".test-uploads",
     },
   },
 });

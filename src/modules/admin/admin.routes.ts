@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { prisma } from "../../lib/prisma.js";
 import { authenticate, requireRole, userId } from "../../middleware/auth.js";
 import { deleteReview } from "../reviews/review.service.js";
@@ -19,6 +19,7 @@ import {
   variantStockBody,
 } from "./admin.schemas.js";
 import * as admin from "./admin.service.js";
+import { MAX_UPLOAD_BYTES, saveProductImage, UPLOAD_TYPES } from "./upload.service.js";
 
 export const adminRouter = Router();
 adminRouter.use(authenticate, requireRole("ADMIN"));
@@ -103,6 +104,12 @@ adminRouter.delete("/reviews/:id", async (req, res) => {
 adminRouter.get("/summary", async (req, res) => {
   const { from, to } = summaryQuery.parse(req.query);
   res.json(await admin.salesSummary(from, to));
+});
+
+// The photo is sent as the raw request body (Content-Type: image/*), so no
+// multipart parser is needed. The real type is checked from the bytes.
+adminRouter.post("/uploads", express.raw({ type: [...UPLOAD_TYPES], limit: MAX_UPLOAD_BYTES }), async (req, res) => {
+  res.status(201).json(await saveProductImage(req.body));
 });
 
 adminRouter.post("/uploads/presign", async (req, res) => {
