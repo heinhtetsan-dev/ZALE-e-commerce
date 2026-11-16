@@ -79,10 +79,6 @@ export function ProductListPage() {
           gender: filters.gender,
           q: filters.q || undefined,
           category: filters.category,
-          color: filters.color,
-          size: filters.size,
-          minPrice: filters.minPrice,
-          maxPrice: filters.maxPrice,
           sort: filters.sort,
           page: filters.page,
           pageSize: PAGE_SIZE,
@@ -100,9 +96,8 @@ export function ProductListPage() {
   }
 
   const activeCount = activeFilterCount(filters)
-  const clearAll = () => setParams(filtersToParams({ q: filters.q, gender: filters.gender, category: [], color: [], size: [], sort: filters.sort, page: 1 }), { preventScrollReset: true })
-  // Men's and women's size runs differ, so a size filter doesn't carry over.
-  const switchAudience = (gender?: Audience) => update({ gender, size: [] })
+  const clearAll = () => setParams(filtersToParams({ q: filters.q, gender: filters.gender, category: [], sort: filters.sort, page: 1 }), { preventScrollReset: true })
+  const switchAudience = (gender?: Audience) => update({ gender })
 
   return (
     <div className="mx-auto max-w-360 px-4 py-8 sm:px-8 sm:py-12">
@@ -170,21 +165,11 @@ export function ProductListPage() {
 
           {activeCount > 0 && (
             <div className="mb-4 flex flex-wrap gap-2">
-              {[...filters.category.map((v) => ['category', v] as const), ...filters.color.map((v) => ['color', v] as const)].map(([key, v]) => (
-                <button key={`${key}-${v}`} type="button" className="border border-sand-400 px-3 py-1 text-xs" onClick={() => update({ [key]: filters[key].filter((x) => x !== v) })}>
+              {filters.category.map((v) => (
+                <button key={`category-${v}`} type="button" className="border border-sand-400 px-3 py-1 text-xs" onClick={() => update({ category: filters.category.filter((x) => x !== v) })}>
                   {facets.data?.categories.find((c) => c.slug === v)?.name ?? v} ✕
                 </button>
               ))}
-              {filters.size.map((s) => (
-                <button key={`size-${s}`} type="button" className="border border-sand-400 px-3 py-1 text-xs" onClick={() => update({ size: filters.size.filter((x) => x !== s) })}>
-                  Size {s} ✕
-                </button>
-              ))}
-              {(filters.minPrice !== undefined || filters.maxPrice !== undefined) && (
-                <button type="button" className="border border-sand-400 px-3 py-1 text-xs" onClick={() => update({ minPrice: undefined, maxPrice: undefined })}>
-                  ${(filters.minPrice ?? 0) / 100} – {filters.maxPrice !== undefined ? `$${filters.maxPrice / 100}` : 'any'} ✕
-                </button>
-              )}
               <button type="button" className="px-2 text-xs font-semibold underline" onClick={clearAll}>
                 Clear all
               </button>

@@ -78,9 +78,6 @@ export interface ProductDetail extends ProductCard {
 export interface Facets {
   brands: Array<{ name: string; slug: string; count: number }>
   categories: Array<{ name: string; slug: string; count: number }>
-  colors: Array<{ name: string; count: number }>
-  sizes: string[]
-  price: { min: number; max: number }
 }
 
 export type CartIssue = 'unavailable' | 'out_of_stock' | 'insufficient_stock' | null
