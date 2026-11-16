@@ -19,9 +19,6 @@ const pexels = (id: number): CatalogImage => ({
   source: "https://www.pexels.com/license/",
 });
 
-/** Site-relative images are served by the storefront itself (frontend/public). */
-const local = (path: string, credit: string): CatalogImage => ({ url: path, credit, source: "" });
-
 export const catalogImages: Record<string, CatalogImage> = {
   "knit-ivory": unsplash("photo-1621198059871-0d5f9b449233"),
   "knit-rust": unsplash("photo-1773747203295-dc002c421c33"),
@@ -71,5 +68,5 @@ export const catalogImages: Record<string, CatalogImage> = {
   "wayfarer": unsplash("photo-1572635196237-14b3f281503f"),
   "aviator-gold": unsplash("photo-1589642380614-4a8c2147b857"),
   "sunglasses-round": unsplash("photo-1584036553516-bf83210aa16c"),
-  "mom-jeans": local("/catalog/mom-jeans-light-wash.jpg", "ZALE studio"),
+  "mom-jeans": unsplash("photo-1576995853123-5a10305d93c0"),
 };
