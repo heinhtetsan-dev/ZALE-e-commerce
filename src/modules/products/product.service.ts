@@ -3,7 +3,6 @@ import { notFound } from "../../lib/errors.js";
 import { skipTake, toPage } from "../../lib/pagination.js";
 import { prisma } from "../../lib/prisma.js";
 import type { ProductListQuery } from "./product.schemas.js";
-import { compareSizes } from "../../lib/sizes.js";
 import { imageUrl, productCardInclude, serializeProductCard, serializeProductDetail } from "./product.serializer.js";
 
 const orderBy = (sort: ProductListQuery["sort"]): Prisma.ProductOrderByWithRelationInput[] => {
@@ -38,11 +37,6 @@ export const buildProductWhere =(q: Omit<ProductListQuery, "sort" | "page" | "pa
   if (q.gender) where.gender = { in: audienceGenders(q.gender) };
   if (q.brand.length) where.brand = { slug: { in: q.brand } };
   if (q.category.length) where.category = { slug: { in: q.category } };
-  if (q.color.length) where.color = { in: q.color, mode: "insensitive" };
-  if (q.size.length) where.variants = { some: { size: { in: q.size }, stock: { gt: 0 } } };
-  if (q.minPrice !== undefined || q.maxPrice !== undefined) {
-    where.priceCents = { gte: q.minPrice, lte: q.maxPrice };
-  }
   return where;
 };
 
@@ -99,7 +93,7 @@ export async function colorwaysOf(styleGroup: string | null, gender: Gender) {
 
 export async function getFacets(gender?: "men" | "women") {
   const active: Prisma.ProductWhereInput = { isActive: true, ...(gender ? { gender: { in: audienceGenders(gender) } } : {}) };
-  const [brands, categories, colors, sizes, price] = await Promise.all([
+  const [brands, categories] = await Promise.all([
     prisma.brand.findMany({
       where: { products: { some: active } },
       select: { name: true, slug: true, _count: { select: { products: { where: active } } } },
@@ -110,20 +104,10 @@ export async function getFacets(gender?: "men" | "women") {
       select: { name: true, slug: true, _count: { select: { products: { where: active } } } },
       orderBy: { name: "asc" },
     }),
-    prisma.product.groupBy({ by: ["color"], where: active, _count: { _all: true }, orderBy: { color: "asc" } }),
-    prisma.productVariant.findMany({
-      where: { stock: { gt: 0 }, product: active },
-      distinct: ["size"],
-      select: { size: true },
-    }),
-    prisma.product.aggregate({ where: active, _min: { priceCents: true }, _max: { priceCents: true } }),
   ]);
 
   return {
     brands: brands.map((b) => ({ name: b.name, slug: b.slug, count: b._count.products })),
     categories: categories.map((c) => ({ name: c.name, slug: c.slug, count: c._count.products })),
-    colors: colors.map((c) => ({ name: c.color, count: c._count._all })),
-    sizes: sizes.map((s) => s.size).sort(compareSizes),
-    price: { min: price._min.priceCents ?? 0, max: price._max.priceCents ?? 0 },
   };
 }

@@ -33,17 +33,15 @@ describe("GET /products", () => {
     expect((await api().get("/api/v1/products?q=ADIDAS")).body.items[0].name).toBe("Court King");
   });
 
-  it("filters by brand, category, color and price", async () => {
+  it("filters by brand and category", async () => {
     expect((await api().get("/api/v1/products?brand=nike")).body.total).toBe(2);
     expect((await api().get("/api/v1/products?category=running,boots")).body.total).toBe(2);
-    expect((await api().get("/api/v1/products?color=white")).body.total).toBe(1);
-    expect((await api().get("/api/v1/products?minPrice=10000&maxPrice=13000")).body.items[0].name).toBe("Road Runner");
   });
 
-  it("filters by size only when that size is in stock", async () => {
-    const res = await api().get("/api/v1/products?size=L");
-    expect(res.body.items.map((p: { name: string }) => p.name)).toEqual(["Court King"]);
-    expect((await api().get("/api/v1/products?size=32")).body.total).toBe(1);
+  it("ignores removed filter params in old links (?size=, ?color=, ?minPrice=)", async () => {
+    const res = await api().get("/api/v1/products?size=L&color=white&minPrice=10000&maxPrice=13000");
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(3);
   });
 
   it("sorts by price descending", async () => {
@@ -55,7 +53,6 @@ describe("GET /products", () => {
     const res = await api().get("/api/v1/products?pageSize=1000");
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
-    expect((await api().get("/api/v1/products?minPrice=500&maxPrice=100")).status).toBe(400);
   });
 
   it("returns CDN image URLs", async () => {
@@ -65,12 +62,12 @@ describe("GET /products", () => {
 });
 
 describe("GET /products/facets", () => {
-  it("returns brands, categories, colors, in-stock sizes and price range", async () => {
+  it("returns brands and categories", async () => {
     const res = await api().get("/api/v1/products/facets");
     expect(res.status).toBe(200);
     expect(res.body.brands.map((b: { slug: string }) => b.slug)).toEqual(["adidas", "nike"]);
-    expect(res.body.sizes).toEqual(["M", "L", "32"]);
-    expect(res.body.price).toEqual({ min: 9000, max: 15000 });
+    expect(res.body).not.toHaveProperty("sizes");
+    expect(res.body).not.toHaveProperty("price");
   });
 });
 

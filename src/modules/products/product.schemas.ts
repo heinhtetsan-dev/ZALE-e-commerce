@@ -13,23 +13,14 @@ export const productSorts = ["newest", "price_asc", "price_desc", "rating", "nam
 /** Shopper-facing audience: "men" and "women" both include unisex products. */
 export const genderParam = z.enum(["men", "women"]).optional();
 
-export const productListQuery = z
-  .object({
-    q: z.string().trim().max(100).optional(),
-    gender: genderParam,
-    brand: csv(z.string().max(60)),
-    category: csv(z.string().max(60)),
-    color: csv(z.string().max(30)),
-    size: csv(z.string().max(20)),
-    minPrice: z.coerce.number().int().nonnegative().optional(),
-    maxPrice: z.coerce.number().int().nonnegative().optional(),
-    sort: z.enum(productSorts).default("newest"),
-    ...paginationQuery(12),
-  })
-  .refine((q) => q.minPrice === undefined || q.maxPrice === undefined || q.minPrice <= q.maxPrice, {
-    message: "minPrice must be less than or equal to maxPrice",
-    path: ["minPrice"],
-  });
+export const productListQuery = z.object({
+  q: z.string().trim().max(100).optional(),
+  gender: genderParam,
+  brand: csv(z.string().max(60)),
+  category: csv(z.string().max(60)),
+  sort: z.enum(productSorts).default("newest"),
+  ...paginationQuery(12),
+});
 
 export type ProductListQuery = z.infer<typeof productListQuery>;
 
