@@ -1,4 +1,3 @@
-/// <reference types="vitest/config" />
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
@@ -18,10 +17,4 @@ export default defineConfig({
   // the dev server doesn't re-optimize mid-navigation and break the import.
   optimizeDeps: { include: ['@stripe/stripe-js/pure', '@stripe/react-stripe-js'] },
   preview: { proxy: apiProxy },
-  test: {
-    environment: 'jsdom',
-    include: ['src/**/*.test.{ts,tsx}'],
-    setupFiles: ['./src/test/setup.ts'],
-    css: false,
-  },
 })
