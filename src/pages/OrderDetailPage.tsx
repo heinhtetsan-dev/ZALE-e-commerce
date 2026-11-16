@@ -64,7 +64,7 @@ export function OrderDetailPage() {
             <button type="button" className="btn-secondary" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
               Cancel order
             </button>
-            <Link to={`/orders/${o.id}/pay`} className="btn-accent">
+            <Link to={`/orders/${o.id}/pay`} className="btn-primary">
               Pay now
             </Link>
           </div>

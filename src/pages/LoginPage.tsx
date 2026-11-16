@@ -28,6 +28,7 @@ export function LoginPage() {
     try {
       const u = await login(parsed.data.email, parsed.data.password)
       navigate(u.role === 'ADMIN' && redirectTarget(location.state) === '/' ? '/admin' : redirectTarget(location.state), { replace: true })
+      // loginထဲပြန်မကျန်အောင် replace true 
     } catch (err) {
       setFormError(errorMessage(err))
       setSubmitting(false)

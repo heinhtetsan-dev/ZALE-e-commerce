@@ -67,7 +67,7 @@ export function PaymentPage() {
                   <ErrorBox message={errorMessage(mockPay.error)} />
                 </div>
               )}
-              <button type="button" className="btn-accent mt-5 w-full py-3" onClick={() => mockPay.mutate()} disabled={mockPay.isPending}>
+              <button type="button" className="btn-primary mt-5 w-full py-3" onClick={() => mockPay.mutate()} disabled={mockPay.isPending}>
                 {mockPay.isPending ? 'Processing…' : `Pay ${money(o.totalCents)}`}
               </button>
             </div>

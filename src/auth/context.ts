@@ -5,7 +5,6 @@ export interface AuthState {
   user: User | null
   isLoading: boolean
   isAdmin: boolean
-  /** The user logged out themselves this session (not an expired session). */
   signedOut: boolean
   login: (email: string, password: string) => Promise<User>
   register: (name: string, email: string, password: string) => Promise<User>

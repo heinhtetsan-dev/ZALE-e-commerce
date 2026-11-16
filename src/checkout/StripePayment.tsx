@@ -39,7 +39,7 @@ function PaymentForm({ orderId, amountLabel, onPaid }: { orderId: string; amount
     <form onSubmit={submit} className="space-y-5">
       <PaymentElement options={{ layout: 'tabs' }} />
       {error && <ErrorBox title="Payment failed" message={error} />}
-      <button type="submit" className="btn-accent w-full py-3" disabled={!stripe || submitting}>
+      <button type="submit" className="btn-primary w-full py-3" disabled={!stripe || submitting}>
         {submitting ? 'Processing…' : `Pay ${amountLabel}`}
       </button>
       <p className="text-center text-xs text-stone-500">Test mode: use card 4242 4242 4242 4242, any future date and any CVC.</p>

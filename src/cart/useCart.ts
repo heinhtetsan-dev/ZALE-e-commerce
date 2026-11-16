@@ -1,3 +1,4 @@
+// guest , member hook 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/context'
 import { api } from '../lib/api'
@@ -6,16 +7,15 @@ import { guestCart, useGuestCart, type GuestCartItem } from './guestCart'
 
 export const MAX_LINE_QUANTITY = 10
 
-/** One shape for guest and server carts so pages don't care which is active. */
 export interface CartLine {
-  key: string
+  key: string 
   variantId: string
   quantity: number
   size: string
   stock: number
   product: GuestCartItem['product']
-  lineTotalCents: number
-  issue: CartIssue
+  lineTotalCents: number 
+  issue: CartIssue 
 }
 
 export interface CartView {
@@ -26,34 +26,35 @@ export interface CartView {
 
 const fromServer = (cart: ServerCart): CartView => ({
   lines: cart.items.map((i) => ({
-    key: i.id,
+    key: i.id, 
     variantId: i.variant.id,
     quantity: i.quantity,
     size: i.variant.size,
     stock: i.variant.stock,
     product: i.product,
-    lineTotalCents: i.lineTotalCents,
+    lineTotalCents: i.lineTotalCents, 
     issue: i.issue,
   })),
   itemCount: cart.itemCount,
   subtotalCents: cart.subtotalCents,
 })
 
+
 const fromGuest = (items: GuestCartItem[]): CartView => {
   const lines = items.map((i) => ({
-    key: i.variantId,
+    key: i.variantId, 
     variantId: i.variantId,
     quantity: i.quantity,
     size: i.size,
     stock: i.stock,
     product: i.product,
-    lineTotalCents: i.product.priceCents * i.quantity,
+    lineTotalCents: i.product.priceCents * i.quantity, 
     issue: null,
   }))
   return {
     lines,
-    itemCount: lines.reduce((n, l) => n + l.quantity, 0),
-    subtotalCents: lines.reduce((n, l) => n + l.lineTotalCents, 0),
+    itemCount: lines.reduce((n, l) => n + l.quantity, 0), // အရေအတွက်စုစုပေါင်း
+    subtotalCents: lines.reduce((n, l) => n + l.lineTotalCents, 0), // စျေးစုစုပေါင်း
   }
 }
 
@@ -63,6 +64,7 @@ export function useCart() {
   const guestItems = useGuestCart()
   const loggedIn = !!user
 
+  // Login ဝင်ထားမှသာ server ကနေ cart ဆွဲယူတယ် (enabled: loggedIn)
   const server = useQuery({
     queryKey: ['cart'],
     queryFn: () => api<ServerCart>('/cart'),
@@ -71,9 +73,11 @@ export function useCart() {
 
   const setCart = (cart: ServerCart) => queryClient.setQueryData(['cart'], cart)
 
+  // ပစ္စည်းထည့်ခြင်း (useMutation = data ပြောင်းတဲ့ action တွေအတွက် React Query ရဲ့ hook)
   const add = useMutation({
     mutationFn: async (item: GuestCartItem) => {
       if (!loggedIn) {
+        
         const existing = guestCart.items().find((i) => i.variantId === item.variantId)?.quantity ?? 0
         if (existing + item.quantity > Math.min(item.stock, MAX_LINE_QUANTITY)) {
           throw new Error(
@@ -85,10 +89,12 @@ export function useCart() {
         guestCart.add(item)
         return
       }
+      // Login ဝင်ထားရင် — server ကိုပို့ပြီး server စစ်ပေးတယ်
       setCart(await api<ServerCart>('/cart/items', { method: 'POST', body: { variantId: item.variantId, quantity: item.quantity } }))
     },
   })
 
+  // အရေအတွက်ပြောင်းခြင်း
   const update = useMutation({
     mutationFn: async ({ line, quantity }: { line: CartLine; quantity: number }) => {
       if (!loggedIn) return guestCart.update(line.variantId, quantity)
@@ -96,6 +102,7 @@ export function useCart() {
     },
   })
 
+  
   const remove = useMutation({
     mutationFn: async (line: CartLine) => {
       if (!loggedIn) return guestCart.remove(line.variantId)
@@ -103,6 +110,8 @@ export function useCart() {
     },
   })
 
+  // နောက်ဆုံး — ဘယ် cart ကိုပြမလဲ ရွေးတယ်:
+  // login ဝင်ထားရင် server cart မဝင်ထားရင် guest cart
   const cart: CartView = loggedIn ? (server.data ? fromServer(server.data) : { lines: [], itemCount: 0, subtotalCents: 0 }) : fromGuest(guestItems)
 
   return {

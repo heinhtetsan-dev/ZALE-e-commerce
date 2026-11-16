@@ -1,18 +1,19 @@
 import { useSyncExternalStore } from 'react'
 
-/** Snapshot of product info so the guest cart can render without extra requests. */
+
 export interface GuestCartItem {
-  variantId: string
+  variantId: string 
   quantity: number
   size: string
   stock: number
   product: { id: string; slug: string; name: string; brand: string; color: string; priceCents: number; image: string | null }
 }
 
-const KEY = 'shoeshop.guestCart'
-const listeners = new Set<() => void>()
-let cache: GuestCartItem[] | null = null
+const KEY = 'shoeshop.guestCart' // localStorage ထဲမှာသုံးမယ့် key
+const listeners = new Set<() => void>() // cart ပြောင်းရင် အကြောင်းကြားရမယ့် component တွေ
+let cache: GuestCartItem[] | null = null // localStorage ကို ခဏခဏမဖတ်ရအောင် memory ထဲ သိမ်းထား
 
+// cache ရှိရင် cache ကပဲယူ
 const read = (): GuestCartItem[] => {
   if (cache) return cache
   try {
@@ -29,22 +30,24 @@ const write = (items: GuestCartItem[]) => {
   try {
     localStorage.setItem(KEY, JSON.stringify(items))
   } catch {
-    /* storage full or unavailable: cart still works for this page view */
+  
   }
-  listeners.forEach((l) => l())
+  listeners.forEach((l) => l()) // UI တွေ re-render ဖြစ်စေတယ်
 }
-
+//  next page storage event ကနေသိပြီးupdate
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
     if (e.key === KEY) {
-      cache = null
+      cache = null 
       listeners.forEach((l) => l())
     }
   })
 }
 
+// Guest cart ကို ပြင်ဆင်တဲ့ function စုစည်းမှု
 export const guestCart = {
   items: read,
+  // ပစ္စည်းထည့် — အရင်ရှိပြီးသား sizeဆိုအရေအတွက်ပေါင်း၊ မရှိရင်အသစ်ထည့်
   add(item: GuestCartItem) {
     const items = read()
     const existing = items.find((i) => i.variantId === item.variantId)
@@ -54,6 +57,7 @@ export const guestCart = {
         : [...items, item],
     )
   },
+  // bagထဲကfunctions
   update(variantId: string, quantity: number) {
     write(read().map((i) => (i.variantId === variantId ? { ...i, quantity } : i)))
   },
@@ -65,9 +69,8 @@ export const guestCart = {
   },
   subscribe(listener: () => void) {
     listeners.add(listener)
-    return () => listeners.delete(listener)
+    return () => listeners.delete(listener) 
   },
-  /** Test hook: forget the in-memory cache after localStorage is reset. */
   reset() {
     cache = null
   },

@@ -23,7 +23,7 @@ export function AdminProductsPage() {
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <h1 className="text-2xl font-bold sm:mr-4 sm:text-3xl">Products</h1>
         <AdminSearchBox key={q} initial={q} label="Search products" placeholder="Search name, slug or brand…" onSearch={(v) => setParams(v ? { q: v } : {})} />
-        <Link to="/admin/products/new" className="btn-accent">
+        <Link to="/admin/products/new" className="btn-primary">
           + New product
         </Link>
       </div>

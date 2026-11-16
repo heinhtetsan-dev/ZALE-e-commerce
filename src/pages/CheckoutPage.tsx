@@ -156,7 +156,7 @@ function CheckoutForm({ userName }: { userName: string }) {
 
         <div className="lg:sticky lg:top-24 lg:self-start">
           <OrderSummary subtotalCents={cart.subtotalCents} shippingCents={shipping}>
-            <button type="submit" className="btn-accent w-full py-3" disabled={placeOrder.isPending}>
+            <button type="submit" className="btn-primary w-full py-3" disabled={placeOrder.isPending}>
               {placeOrder.isPending ? 'Placing order…' : 'Place order & pay'}
             </button>
             <p className="mt-3 text-center text-xs text-stone-500">Your items are reserved when you place the order. Unpaid orders are released after 30 minutes.</p>

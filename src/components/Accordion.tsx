@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { ChevronIcon } from './icons'
 
-/** Native <details>: keyboard and screen-reader friendly with no extra state. */
 export function AccordionItem({ title, defaultOpen, children }: { title: string; defaultOpen?: boolean; children: ReactNode }) {
   return (
     <details open={defaultOpen} className="group border-b border-sand-300">

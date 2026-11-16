@@ -111,7 +111,7 @@ export function CartPage() {
 
         <div className="lg:sticky lg:top-24 lg:self-start">
           <OrderSummary subtotalCents={cart.subtotalCents} shippingCents={estimateShipping(cart.subtotalCents)} estimated>
-            <button type="button" className="btn-accent w-full py-3" disabled={hasIssues} onClick={() => navigate(user ? '/checkout' : '/login', { state: { from: '/checkout' } })}>
+            <button type="button" className="btn-primary w-full py-3" disabled={hasIssues} onClick={() => navigate(user ? '/checkout' : '/login', { state: { from: '/checkout' } })}>
               {user ? 'Checkout' : 'Log in to checkout'}
             </button>
             {hasIssues && <p className="mt-2 text-center text-xs text-amber-700">Fix the highlighted items to continue.</p>}
