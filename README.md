@@ -46,4 +46,24 @@ npm run dev              # http://localhost:5173
 | Admin | `admin@zaleshop.test` | `Admin123!` |
 | Customer | `customer@fashionshop.test` | `Customer123!` |
 
+## Deploy
+
+| Part | Where | Config |
+|---|---|---|
+| Database | Neon (managed PostgreSQL) | connection string goes in the API's `DATABASE_URL` |
+| API | Render | [render.yaml](render.yaml) blueprint (`backend/`) |
+| Storefront | Vercel | root directory `frontend`, preset Vite, [frontend/vercel.json](frontend/vercel.json) |
+
+1. Create a Neon database and copy its connection string.
+2. Seed it once from your machine with strong passwords (the demo passwords above are public):
+   ```bash
+   cd backend
+   DATABASE_URL="<neon url>" NODE_ENV=production SEED_ADMIN_PASSWORD="<strong>" SEED_CUSTOMER_PASSWORD="<strong>" sh -c "npx prisma migrate deploy && npm run db:seed"
+   ```
+3. On Render, create a Blueprint from this repository and fill in `DATABASE_URL`, `CORS_ORIGINS` (the Vercel URL) and the Stripe **test** keys.
+4. On Vercel, set `VITE_API_URL=https://<render-app>.onrender.com/api/v1` and deploy.
+5. In Stripe (test mode), add a webhook to `https://<render-app>.onrender.com/api/v1/payments/webhook` and put its signing secret in `STRIPE_WEBHOOK_SECRET` on Render.
+
+On Render's free plan the API sleeps when idle (the first request takes up to a minute) and admin photo uploads are lost on redeploy unless S3 is configured.
+
 See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md) for scripts, tests and configuration.

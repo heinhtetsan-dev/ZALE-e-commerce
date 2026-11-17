@@ -1,0 +1,33 @@
+# Render blueprint for the ZALE API (backend/). The storefront is deployed on Vercel.
+# Values marked `sync: false` are asked for when the blueprint is created.
+services:
+  - type: web
+    name: zale-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    # Dev dependencies (prisma CLI, TypeScript) are needed to build.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npx prisma migrate deploy && npm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false # managed PostgreSQL connection string, e.g. from Neon (?sslmode=require)
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false # the storefront URL, e.g. https://zale-fashion-shop.vercel.app
+      - key: TRUST_PROXY
+        value: "1"
+      - key: PAYMENTS_MODE
+        value: stripe
+      - key: STRIPE_SECRET_KEY
+        sync: false # sk_test_...
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false # pk_test_...
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false # whsec_... from the Stripe webhook for /api/v1/payments/webhook
