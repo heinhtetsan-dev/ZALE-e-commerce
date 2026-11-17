@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { OrderStatusBadge, PaymentBadge } from '../components/OrderStatusBadge'
 import { OrderSummary } from '../components/OrderSummary'
@@ -11,7 +12,12 @@ const steps = ['PENDING', 'SHIPPED', 'DELIVERED'] as const
 
 export function OrderTimeline({ order }: { order: Order }) {
   if (order.status === 'CANCELLED') {
-    return <p className="text-sm text-stone-600">This order was cancelled{order.cancelledAt ? ` on ${formatDateTime(order.cancelledAt)}` : ''}. Any reserved stock was released.</p>
+    return (
+      <p className="text-sm text-stone-600">
+        This order was cancelled{order.cancelledAt ? ` on ${formatDateTime(order.cancelledAt)}` : ''}.{' '}
+        {order.paymentStatus === 'REFUNDED' ? 'Your payment has been refunded in full.' : 'Any reserved stock was released.'}
+      </p>
+    )
   }
   const reached = steps.indexOf(order.status)
   const dates = [order.createdAt, order.shippedAt, order.deliveredAt]
@@ -31,10 +37,12 @@ export function OrderTimeline({ order }: { order: Order }) {
 export function OrderDetailPage() {
   const { id = '' } = useParams()
   const queryClient = useQueryClient()
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
   const order = useQuery({ queryKey: ['order', id], queryFn: () => api<Order>(`/orders/${id}`) })
   const cancel = useMutation({
     mutationFn: () => api<Order>(`/orders/${id}/cancel`, { method: 'POST' }),
     onSuccess: (o) => {
+      setConfirmingCancel(false)
       queryClient.setQueryData(['order', id], o)
       queryClient.invalidateQueries({ queryKey: ['orders'] })
     },
@@ -44,6 +52,8 @@ export function OrderDetailPage() {
   if (order.isError) return <ErrorBox message={errorMessage(order.error)} onRetry={() => order.refetch()} />
   const o = order.data
   const awaitingPayment = o.status === 'PENDING' && o.paymentStatus === 'UNPAID'
+  // A paid order can be cancelled (with a full refund) until it ships.
+  const cancellable = o.status === 'PENDING' && o.paymentStatus === 'PAID'
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -70,6 +80,29 @@ export function OrderDetailPage() {
           </div>
         </div>
       )}
+      {cancellable &&
+        (confirmingCancel ? (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="group" aria-label="Confirm cancellation">
+            <p>
+              Cancel order #{o.number}? You will be refunded {money(o.totalCents)} in full and the items go back into stock.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" className="btn-danger" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
+                {cancel.isPending ? 'Cancelling…' : 'Yes, cancel order'}
+              </button>
+              <button type="button" className="btn-ghost" onClick={() => setConfirmingCancel(false)} disabled={cancel.isPending}>
+                Keep order
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6 flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm text-stone-700 sm:flex-row sm:items-center">
+            <p className="flex-1">Changed your mind? You can cancel this order for a full refund until it ships.</p>
+            <button type="button" className="btn-secondary" onClick={() => setConfirmingCancel(true)}>
+              Cancel order
+            </button>
+          </div>
+        ))}
       {cancel.isError && (
         <div className="mb-6">
           <ErrorBox message={errorMessage(cancel.error)} />
