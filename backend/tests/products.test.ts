@@ -7,7 +7,7 @@ beforeAll(async () => {
   await createProduct({ name: "Road Runner", brand: "Nike", category: "Running", color: "Red", priceCents: 12000, variants: [{ size: "L", stock: 0 }, { size: "M", stock: 3 }] });
   await createProduct({ name: "Court King", brand: "Adidas", category: "Basketball", color: "White", priceCents: 9000, variants: [{ size: "L", stock: 8 }] });
   await createProduct({ name: "Trail Boss", brand: "Nike", category: "Boots", color: "Brown", priceCents: 15000, variants: [{ size: "32", stock: 1 }] });
-  await createProduct({ name: "Hidden Shoe", brand: "Nike", isActive: false });
+  await createProduct({ name: "Hidden Item", brand: "Nike", isActive: false });
 });
 
 afterAll(() => prisma.$disconnect());
@@ -18,7 +18,7 @@ describe("GET /products", () => {
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(3);
     expect(res.body.page).toBe(1);
-    expect(res.body.items.map((p: { name: string }) => p.name)).not.toContain("Hidden Shoe");
+    expect(res.body.items.map((p: { name: string }) => p.name)).not.toContain("Hidden Item");
   });
 
   it("paginates", async () => {
@@ -84,7 +84,7 @@ describe("GET /products/:slug", () => {
 
   it("404s for unknown or inactive products", async () => {
     expect((await api().get("/api/v1/products/nope")).status).toBe(404);
-    const hidden = await prisma.product.findFirstOrThrow({ where: { name: "Hidden Shoe" } });
+    const hidden = await prisma.product.findFirstOrThrow({ where: { name: "Hidden Item" } });
     expect((await api().get(`/api/v1/products/${hidden.slug}`)).status).toBe(404);
   });
 });

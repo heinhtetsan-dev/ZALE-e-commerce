@@ -11,7 +11,7 @@ import type { StockShortage } from './types'
 export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1'
 
 // Login token ကို browser ရဲ့ localStorage ထဲ သိမ်းတဲ့အခါသုံးမယ့် key နာမည်
-const TOKEN_KEY = 'shoeshop.token'
+const TOKEN_KEY = 'zale.token'
 
 // Token သိမ်း/ထုတ် လုပ်တဲ့ object။
 // try/catch ပတ်ထားတာက private browsing mode မှာ localStorage သုံးလို့မရရင်

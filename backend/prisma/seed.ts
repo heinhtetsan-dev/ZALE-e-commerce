@@ -24,14 +24,14 @@ async function main() {
   const customerPassword = process.env.SEED_CUSTOMER_PASSWORD ?? "Customer123!";
 
   await prisma.user.upsert({
-    where: { email: "admin@shoeshop.test" },
+    where: { email: "admin@zaleshop.test" },
     update: {},
-    create: { email: "admin@shoeshop.test", name: "Shop Admin", role: "ADMIN", passwordHash: await bcrypt.hash(adminPassword, 12) },
+    create: { email: "admin@zaleshop.test", name: "Shop Admin", role: "ADMIN", passwordHash: await bcrypt.hash(adminPassword, 12) },
   });
   await prisma.user.upsert({
-    where: { email: "customer@shoeshop.test" },
+    where: { email: "customer@fashionshop.test" },
     update: {},
-    create: { email: "customer@shoeshop.test", name: "Casey Customer", passwordHash: await bcrypt.hash(customerPassword, 12) },
+    create: { email: "customer@fashionshop.test", name: "Casey Customer", passwordHash: await bcrypt.hash(customerPassword, 12) },
   });
 
   const brandIds = new Map<string, string>();
@@ -104,8 +104,8 @@ async function main() {
   const retired = await prisma.product.updateMany({ where: { slug: { notIn: keep }, isActive: true }, data: { isActive: false } });
 
   console.log(`Seed complete: ${created} created, ${updated} refreshed, ${retired.count} products no longer in the catalog hidden.`);
-  console.log(`Admin: admin@shoeshop.test / ${adminPassword}`);
-  console.log(`Customer: customer@shoeshop.test / ${customerPassword}`);
+  console.log(`Admin: admin@zaleshop.test / ${adminPassword}`);
+  console.log(`Customer: customer@fashionshop.test / ${customerPassword}`);
 }
 
 main()

@@ -86,8 +86,8 @@ describe("reviews", () => {
 
 describe("wishlist", () => {
   it("adds idempotently, lists product cards, exposes ids and removes", async () => {
-    const p = await createProduct({ name: "Wish Shoe" });
-    const q = await createProduct({ name: "Other Shoe" });
+    const p = await createProduct({ name: "Wish Item" });
+    const q = await createProduct({ name: "Other Item" });
     const { token } = await createCustomer();
     expect((await api().get("/api/v1/wishlist")).status).toBe(401);
 
@@ -97,7 +97,7 @@ describe("wishlist", () => {
 
     const list = await api().get("/api/v1/wishlist").set(auth(token));
     expect(list.body.total).toBe(2);
-    expect(list.body.items[0].product).toMatchObject({ name: "Other Shoe", priceCents: 10000 });
+    expect(list.body.items[0].product).toMatchObject({ name: "Other Item", priceCents: 10000 });
 
     const ids = await api().get("/api/v1/wishlist/ids").set(auth(token));
     expect(ids.body.productIds.sort()).toEqual([p.id, q.id].sort());

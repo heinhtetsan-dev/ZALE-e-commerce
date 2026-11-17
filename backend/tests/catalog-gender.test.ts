@@ -16,7 +16,7 @@ afterAll(() => prisma.$disconnect());
 const names = (res: { body: { items: Array<{ name: string }> } }) => res.body.items.map((p) => p.name).sort();
 
 describe("men's / women's catalog", () => {
-  it("lists men's and women's shoes, with unisex in both", async () => {
+  it("lists men's and women's products, with unisex in both", async () => {
     expect(names(await api().get("/api/v1/products?gender=men"))).toEqual(["Runner M", "Runner U"]);
     expect(names(await api().get("/api/v1/products?gender=women"))).toEqual(["Heel Boot", "Runner U", "Runner W"]);
     expect((await api().get("/api/v1/products")).body.total).toBe(4);

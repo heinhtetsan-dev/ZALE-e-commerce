@@ -22,7 +22,7 @@ The demo catalog (`prisma/catalog.ts`) has 46 men's, women's and unisex items �
 
 Order history (`GET /orders`) lists only paid orders; unpaid checkouts stay reachable by id for payment and expire on their own.
 
-Demo accounts (from the seed): `admin@shoeshop.test` / `Admin123!`, `customer@shoeshop.test` / `Customer123!`.
+Demo accounts (from the seed): `admin@zaleshop.test` / `Admin123!`, `customer@fashionshop.test` / `Customer123!`.
 
 ## Scripts
 
@@ -91,11 +91,11 @@ npm run db:start   # if not already running
 npm test
 ```
 
-Tests run against the separate `shoeshop_test` database. Each file truncates the tables it uses. Stripe network calls are stubbed, but webhook signatures are verified with Stripe's real signing code.
+Tests run against the separate `zale_test` database. Each file truncates the tables it uses. Stripe network calls are stubbed, but webhook signatures are verified with Stripe's real signing code.
 
 ## Removing test data
 
-`npm run db:clean-test-data` previews what would be removed; `npm run db:clean-test-data -- --yes` deletes it: all orders (stock from orders that were not cancelled is restored), customer accounts other than `customer@shoeshop.test` (admins are kept), end-to-end test products ("E2E Tee …") and `@example.com` newsletter sign-ups. The catalog is kept. It refuses to run when `NODE_ENV=production`.
+`npm run db:clean-test-data` previews what would be removed; `npm run db:clean-test-data -- --yes` deletes it: all orders (stock from orders that were not cancelled is restored), customer accounts other than `customer@fashionshop.test` (admins are kept), end-to-end test products ("E2E Tee …") and `@example.com` newsletter sign-ups. The catalog is kept. It refuses to run when `NODE_ENV=production`.
 
 ## Security notes for deployment
 

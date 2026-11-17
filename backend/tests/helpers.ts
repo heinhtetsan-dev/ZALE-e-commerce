@@ -66,12 +66,12 @@ export async function createProduct(opts: {
     update: {},
     create: { name: categoryName, slug: slug(categoryName) },
   });
-  const name = opts.name ?? `Shoe ${uid()}`;
+  const name = opts.name ?? `Item ${uid()}`;
   return prisma.product.create({
     data: {
       name,
       slug: `${slug(name)}-${uid()}`,
-      description: "A test shoe",
+      description: "A test item",
       color: opts.color ?? "Black",
       priceCents: opts.priceCents ?? 10000,
       isActive: opts.isActive ?? true,

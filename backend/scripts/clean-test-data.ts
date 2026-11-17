@@ -13,7 +13,7 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 
-const DEMO_CUSTOMER = "customer@shoeshop.test";
+const DEMO_CUSTOMER = "customer@fashionshop.test";
 const apply = process.argv.includes("--yes");
 
 if (process.env.NODE_ENV === "production") {

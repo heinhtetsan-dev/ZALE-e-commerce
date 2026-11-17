@@ -4,7 +4,7 @@ Status: living document. Any intentional deviation in the implementation must be
 
 ## 1. Overview
 
-An online men's and women's fashion store (clothing and accessories) with a customer storefront and an admin back office. (The project started as a shoe shop; repository, database and package names still say `shoeshop`.)
+An online men's and women's fashion store (clothing and accessories) with a customer storefront and an admin back office.
 
 | Application | Folder       | Stack                                                                 | Repository        |
 |-------------|--------------|-----------------------------------------------------------------------|-------------------|

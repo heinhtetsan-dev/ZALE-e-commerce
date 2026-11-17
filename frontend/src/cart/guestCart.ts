@@ -9,7 +9,7 @@ export interface GuestCartItem {
   product: { id: string; slug: string; name: string; brand: string; color: string; priceCents: number; image: string | null }
 }
 
-const KEY = 'shoeshop.guestCart' // localStorage ထဲမှာသုံးမယ့် key
+const KEY = 'zale.guestCart' // localStorage ထဲမှာသုံးမယ့် key
 const listeners = new Set<() => void>() // cart ပြောင်းရင် အကြောင်းကြားရမယ့် component တွေ
 let cache: GuestCartItem[] | null = null // localStorage ကို ခဏခဏမဖတ်ရအောင် memory ထဲ သိမ်းထား
 

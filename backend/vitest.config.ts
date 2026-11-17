@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { defineConfig } from "vitest/config";
 
-const testDbUrl = process.env.TEST_DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5433/shoeshop_test";
+const testDbUrl = process.env.TEST_DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5433/zale_test";
 
 export default defineConfig({
   test: {

@@ -9,7 +9,7 @@ import path from "node:path";
 
 const port = Number(process.env.DEV_DB_PORT ?? 5433);
 const databaseDir = path.resolve(process.env.DEV_DB_DIR ?? ".pgdata");
-const databases = ["shoeshop", "shoeshop_test"];
+const databases = ["zale", "zale_test"];
 
 const pg = new EmbeddedPostgres({
   databaseDir,
