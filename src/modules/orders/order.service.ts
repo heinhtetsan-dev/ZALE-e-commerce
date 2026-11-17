@@ -146,10 +146,42 @@ export async function restockOrder(tx: Tx, orderId: string) {
   }
 }
 
-export async function cancelOrder(userId: string, orderId: string) {
-  await getOrderRecord(orderId, userId);
-  const cancelled = await prisma.$transaction((tx) => cancelUnpaidOrder(tx, orderId));
-  if (!cancelled) throw conflict("Only unpaid pending orders can be cancelled");
+/**
+ * Cancels a PENDING + PAID order: flips it to CANCELLED + REFUNDED, restocks,
+ * and runs `refund` inside the same transaction, so a provider failure rolls
+ * everything back. The conditional UPDATE locks the order row, so it cannot be
+ * shipped or cancelled twice concurrently.
+ */
+export async function cancelPaidOrder(orderId: string, refund: () => Promise<void>) {
+  await prisma.$transaction(
+    async (tx) => {
+      const flipped = await tx.$executeRaw`
+        UPDATE "Order" SET "status" = 'CANCELLED', "paymentStatus" = 'REFUNDED', "cancelledAt" = now(), "refundedAt" = now(), "updatedAt" = now()
+        WHERE "id" = ${orderId}::uuid AND "status" = 'PENDING' AND "paymentStatus" = 'PAID'`;
+      if (flipped === 0) throw conflict("The order was changed by someone else. Refresh and try again.");
+      await restockOrder(tx, orderId);
+      await refund();
+    },
+    { maxWait: 10_000, timeout: 30_000 },
+  );
+}
+
+/**
+ * A customer cancels their own order. Allowed until it ships: an unpaid
+ * pending order is simply cancelled, a paid one is also refunded in full.
+ * `refund` is injected by the caller to keep this module independent of the
+ * payment provider (payment.service already imports from this module).
+ */
+export async function cancelOrder(userId: string, orderId: string, refund: (order: { id: string; stripePaymentIntentId: string | null }) => Promise<void>) {
+  const order = await getOrderRecord(orderId, userId);
+  if (order.status !== "PENDING") {
+    throw conflict(order.status === "CANCELLED" ? "This order is already cancelled" : "This order has already been shipped and can no longer be cancelled");
+  }
+  if (order.paymentStatus === "PAID") {
+    await cancelPaidOrder(orderId, () => refund(order));
+  } else if (!(await prisma.$transaction((tx) => cancelUnpaidOrder(tx, orderId)))) {
+    throw conflict("The order was changed by someone else. Refresh and try again.");
+  }
   return getOrder(orderId, userId);
 }
 

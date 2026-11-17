@@ -6,7 +6,7 @@ import { skipTake, toPage } from "../../lib/pagination.js";
 import { logger } from "../../lib/logger.js";
 import { prisma } from "../../lib/prisma.js";
 import { orderInclude, serializeOrder } from "../orders/order.serializer.js";
-import { cancelUnpaidOrder, restockOrder } from "../orders/order.service.js";
+import { cancelPaidOrder, cancelUnpaidOrder, restockOrder } from "../orders/order.service.js";
 import { refundPayment, voidPaymentIntent } from "../payments/payment.service.js";
 import { imageUrl, productCardInclude, serializeProductDetail } from "../products/product.serializer.js";
 import type { z } from "zod";
@@ -197,17 +197,7 @@ export async function cancelOrderAsAdmin(orderId: string) {
     return adminOrder(orderId);
   }
 
-  await prisma.$transaction(
-    async (tx) => {
-      const flipped = await tx.$executeRaw`
-        UPDATE "Order" SET "status" = 'CANCELLED', "paymentStatus" = 'REFUNDED', "cancelledAt" = now(), "refundedAt" = now(), "updatedAt" = now()
-        WHERE "id" = ${orderId}::uuid AND "status" = 'PENDING' AND "paymentStatus" = 'PAID'`;
-      if (flipped === 0) throw changedConcurrently();
-      await restockOrder(tx, orderId);
-      await refundPayment(order);
-    },
-    { maxWait: 10_000, timeout: 30_000 },
-  );
+  await cancelPaidOrder(orderId, () => refundPayment(order));
   return adminOrder(orderId);
 }
 

@@ -146,7 +146,7 @@ describe("orders after checkout", () => {
     expect(await stockOf(v)).toBe(3);
   });
 
-  it("mock payment marks the order paid; paid orders cannot be cancelled", async () => {
+  it("mock payment marks the order paid exactly once", async () => {
     const p = await createProduct();
     const { token } = await customerWithCartItem(p.variants[0]!.id);
     const { body } = await api().post("/api/v1/orders").set(auth(token)).send({ shippingAddress: address });
@@ -156,7 +156,41 @@ describe("orders after checkout", () => {
     expect(Math.abs(new Date(paid.body.paidAt).getTime() - Date.now())).toBeLessThan(60_000);
     expect(Math.abs(new Date(paid.body.createdAt).getTime() - Date.now())).toBeLessThan(60_000);
     expect((await api().post(`/api/v1/orders/${body.order.id}/pay/mock`).set(auth(token))).status).toBe(409);
+  });
+
+  it("cancelling a paid order before shipping refunds it and puts the stock back", async () => {
+    const p = await createProduct({ variants: [{ size: 42, stock: 3 }] });
+    const v = p.variants[0]!.id;
+    const { token } = await customerWithCartItem(v, 2);
+    const { body } = await api().post("/api/v1/orders").set(auth(token)).send({ shippingAddress: address });
+    await api().post(`/api/v1/orders/${body.order.id}/pay/mock`).set(auth(token));
+    expect(await stockOf(v)).toBe(1);
+
+    const res = await api().post(`/api/v1/orders/${body.order.id}/cancel`).set(auth(token));
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ status: "CANCELLED", paymentStatus: "REFUNDED" });
+    expect(await stockOf(v)).toBe(3);
+
+    // It stays visible in the order history as a record of the purchase.
+    const list = await api().get("/api/v1/orders").set(auth(token));
+    expect(list.body.items[0]).toMatchObject({ id: body.order.id, status: "CANCELLED", paymentStatus: "REFUNDED" });
+
+    // A second cancel is refused without restocking again.
     expect((await api().post(`/api/v1/orders/${body.order.id}/cancel`).set(auth(token))).status).toBe(409);
+    expect(await stockOf(v)).toBe(3);
+  });
+
+  it("refuses to cancel an order once it has shipped", async () => {
+    const p = await createProduct();
+    const { token } = await customerWithCartItem(p.variants[0]!.id);
+    const { body } = await api().post("/api/v1/orders").set(auth(token)).send({ shippingAddress: address });
+    await api().post(`/api/v1/orders/${body.order.id}/pay/mock`).set(auth(token));
+    await prisma.order.update({ where: { id: body.order.id }, data: { status: "SHIPPED", shippedAt: new Date() } });
+
+    const res = await api().post(`/api/v1/orders/${body.order.id}/cancel`).set(auth(token));
+    expect(res.status).toBe(409);
+    expect(res.body.error.message).toMatch(/shipped/i);
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: body.order.id } })).status).toBe("SHIPPED");
   });
 
   it("expires stale unpaid orders and releases their stock", async () => {
