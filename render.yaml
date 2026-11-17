@@ -5,6 +5,7 @@ services:
     name: zale-api
     runtime: node
     plan: free
+    region: singapore # same region as the Neon database
     rootDir: backend
     # Dev dependencies (prisma CLI, TypeScript) are needed to build.
     buildCommand: npm ci --include=dev && npm run build
