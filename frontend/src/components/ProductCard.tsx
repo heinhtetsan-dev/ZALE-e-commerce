@@ -104,8 +104,11 @@ export function ProductCard({ product, tone = 0 }: { product: Product; tone?: nu
         <Link to={`/products/${product.slug}`} tabIndex={-1} aria-hidden>
           <ProductImage src={product.image} alt="" className="size-full transition duration-500 group-hover:scale-[1.03]" />
         </Link>
+        
         {/* ပစ္စည်းပြတ်နေရင် "Sold out" တံဆိပ်ပြ */}
         {!product.inStock && <span className="eyebrow absolute left-3 top-3 bg-cream px-2 py-1 text-ink">Sold out</span>}
+
+
         <div className="absolute right-3 top-3">
           <WishlistButton productId={product.id} compact />
         </div>
