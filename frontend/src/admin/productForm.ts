@@ -1,0 +1,60 @@
+import { z } from 'zod'
+
+export const productFormSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(150),
+  slug: z
+    .string()
+    .trim()
+    .max(120)
+    .regex(/^([a-z0-9]+(?:-[a-z0-9]+)*)?$/, 'Lowercase letters, numbers and hyphens only')
+    .transform((v) => v || undefined),
+  description: z.string().trim().min(1, 'Description is required').max(5000),
+  brandId: z.string().min(1, 'Choose a brand'),
+  categoryId: z.string().min(1, 'Choose a category'),
+  color: z.string().trim().min(1, 'Color is required').max(30),
+  colorway: z.string().trim().max(80),
+  gender: z.enum(['MEN', 'WOMEN', 'UNISEX']),
+  styleGroup: z
+    .string()
+    .trim()
+    .max(80)
+    .regex(/^([a-z0-9]+(?:-[a-z0-9]+)*)?$/, 'Lowercase letters, numbers and hyphens only'),
+  imageCredit: z.string().trim().max(500),
+  imageSourceUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((v) => v === '' || /^https:\/\//.test(v), 'Must be an https URL'),
+  price: z
+    .string()
+    .trim()
+    .regex(/^\d+(\.\d{1,2})?$/, 'Enter a price like 129.99')
+    .transform((v) => Math.round(Number(v) * 100)),
+  images: z
+    .string()
+    .transform((v) =>
+      v
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.string().refine((s) => /^https:\/\//.test(s) || /^[\w./-]+$/.test(s), 'Each image must be an https URL or CDN key')).max(8, 'At most 8 images')),
+  isActive: z.boolean(),
+})
+
+export type ProductFormValues = z.input<typeof productFormSchema>
+
+export const sizeRowSchema = z.object({
+  size: z
+    .string()
+    .trim()
+    .min(1, 'Enter a size')
+    .max(20)
+    .regex(/^[\w ./-]+$/, "Use letters, numbers, spaces, '/', '.' or '-'"),
+  stock: z.number({ error: 'Enter stock' }).int('Whole numbers only').min(0, 'Stock cannot be negative').max(100000),
+})
+
+export const variantsSchema = z
+  .array(sizeRowSchema)
+  .max(40)
+  .refine((rows) => new Set(rows.map((r) => r.size.trim().toUpperCase())).size === rows.length, 'Each size may only appear once')

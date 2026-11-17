@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource/cormorant-garamond/400.css';
+@import '@fontsource/cormorant-garamond/500.css';
+
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Cormorant Garamond', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+
+
+  --color-cream: #f4f0ea;
+  --color-paper: #fbf9f6;
+  --color-ink: #1b1b1b;
+  --color-sand-100: #e8e2d8;
+  --color-sand-200: #e4dcd0;
+  --color-sand-300: #d9cfc1;
+  --color-sand-400: #cfc6b8;
+  --color-taupe: #6b655d;
+
+  --color-brand-50: #f4f0ea;
+  --color-brand-100: #e8e2d8;
+  --color-brand-500: #8a7b68;
+  --color-brand-600: #1b1b1b;
+  --color-brand-700: #000000;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-cream text-ink antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ink;
+  }
+  summary {
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+}
+
+@utility eyebrow {
+  @apply text-xs font-medium uppercase tracking-[0.18em] text-taupe;
+}
+@utility display {
+  @apply font-serif font-normal leading-[1.05] tracking-[-0.01em];
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 px-6 py-3 text-xs font-medium uppercase tracking-[0.18em] transition disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-ink text-cream hover:bg-black;
+}
+@utility btn-secondary {
+  @apply btn border border-ink/60 bg-transparent text-ink hover:border-ink hover:bg-ink hover:text-cream;
+}
+@utility btn-ghost {
+  @apply btn text-ink hover:bg-sand-100;
+}
+@utility btn-danger {
+  @apply btn bg-red-700 text-white hover:bg-red-800;
+}
+@utility input {
+  @apply block w-full border border-sand-400 bg-paper px-3 py-2.5 text-base text-ink placeholder:text-taupe/70 focus:border-ink focus:outline-none sm:text-sm;
+}
+@utility label {
+  @apply mb-1 block text-sm text-ink;
+}
+@utility card {
+  @apply border border-sand-200 bg-paper;
+}
+@utility link-underline {
+  @apply underline decoration-1 underline-offset-4 hover:decoration-2;
+}
