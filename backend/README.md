@@ -1,4 +1,4 @@
-# ZALE — Back-End
+# ZALE Fashion Shop — Back-End
 
 REST API for the ZALE men's and women's fashion shop: catalog, auth, cart, checkout with atomic stock handling, orders, reviews, wishlist, admin and Stripe (test mode) payments.
 
@@ -12,7 +12,7 @@ npm install
 cp .env.example .env          # then set JWT_SECRET to a random 32+ char string
 npm run db:start              # local PostgreSQL on :5433 (keep running in its own terminal)
 npm run db:deploy             # apply migrations
-npm run db:seed               # 56 clothing & accessory items (men's / women's / unisex), demo accounts
+npm run db:seed               # 46 clothing, shoe & accessory items (men's / women's / unisex), demo accounts
 npm run dev                   # http://localhost:4000/api/v1
 ```
 

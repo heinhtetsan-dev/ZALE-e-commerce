@@ -1,9 +1,9 @@
-# ZALE — Front-End
+# ZALE Fashion Shop — Front-End
 
 Responsive web storefront and admin back office for ZALE, a women's and men's fashion shop. It is built mobile-first, so it works in phone browsers as well as on desktop.
 
 **Stack:** React 19, Vite, TypeScript, React Router, TanStack Query, Tailwind CSS 4, Zod, Stripe Elements.
-It talks to the back-end REST API (separate repository) described in `../PROJECT_SPEC.md`.
+It talks to the back-end REST API in `../backend`, described in `../PROJECT_SPEC.md`.
 
 ## Quick start
 
