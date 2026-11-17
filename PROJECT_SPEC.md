@@ -70,13 +70,14 @@ This spec lives at the workspace root and is versioned in its own small Git repo
 - `POST /orders` returns a `clientSecret`; the front-end confirms the card with Stripe Elements (Payment Element).
 - The Stripe webhook (`payment_intent.succeeded`) marks the order `PAID`. `payment_intent.payment_failed` keeps it `UNPAID` (customer may retry with the same intent). `GET /orders/:id` also reconciles with Stripe when the order is still unpaid, so the confirmation page works even without a webhook in local dev.
 - When an unpaid order is cancelled or expires, its PaymentIntent is cancelled. A payment that still succeeds for a cancelled order is refunded automatically and the order's payment status becomes `REFUNDED`.
-- Unpaid orders older than `ORDER_PAYMENT_TIMEOUT_MINUTES` (default 30) are cancelled and their stock restored by an idempotent sweep (conditional `UPDATE … WHERE status='PENDING' AND "paymentStatus"='UNPAID'`), safe to run from many instances. Customers may also cancel their own unpaid pending orders, which restores stock.
+- Unpaid orders older than `ORDER_PAYMENT_TIMEOUT_MINUTES` (default 30) are cancelled and their stock restored by an idempotent sweep (conditional `UPDATE … WHERE status='PENDING' AND "paymentStatus"='UNPAID'`), safe to run from many instances. Customers may also cancel their own orders until they ship (see §3.5).
 - `PAYMENTS_MODE=mock` (local dev / tests without Stripe keys): no Stripe call; the client calls `POST /orders/:id/pay/mock` which marks the order paid. Mock mode is refused when `NODE_ENV=production`.
 
 ### 3.5 Accounts
 - Register (name, email, password ≥ 8 chars), login, logout (client discards the token).
 - Profile: view/update name, change password (requires current password).
 - Order history: paginated list and order detail with items, totals, status and payment status.
+- Cancelling: a customer can cancel their own order until it ships (`PENDING` only; `SHIPPED`/`DELIVERED` are refused with 409). An unpaid order is simply cancelled and its PaymentIntent voided; a paid order is refunded in full (`paymentStatus=REFUNDED`) and its items go back into stock — the state flip, restock and provider refund share one transaction, exactly like the admin cancel. Cancelled paid orders stay in the order history as a record.
 
 ### 3.6 Wishlist
 - Customers add/remove products (not sizes) and view the list; the product card and detail page show a heart toggle.
@@ -89,7 +90,7 @@ This spec lives at the workspace root and is versioned in its own small Git repo
 ### 3.8 Admin
 - Product CRUD (name, slug, description, brand, category, color, price, images, active flag). Delete is a soft delete (`isActive=false`) when the product is referenced by orders, otherwise a hard delete.
 - Per-size stock management: add sizes, set absolute stock per size (validated ≥ 0), remove sizes without orders.
-- Orders: list/filter by status; status transitions **`PENDING → SHIPPED → DELIVERED`** (only forward, one step at a time; `PENDING → SHIPPED` requires payment `PAID`). `CANCELLED` is set by the system/customer for unpaid orders, or by an admin.
+- Orders: list/filter by status; status transitions **`PENDING → SHIPPED → DELIVERED`** (only forward, one step at a time; `PENDING → SHIPPED` requires payment `PAID`). `CANCELLED` is set by the customer before shipping, by the system for expired unpaid orders, or by an admin.
 - Cancel and refund: an admin can cancel any order that has not shipped (`PENDING`); stock is returned and a paid order is refunded in full (`paymentStatus=REFUNDED`). A shipped or delivered paid order can be refunded instead (status unchanged), optionally returning its items to stock. The state change, restock and provider refund run in one transaction, so a failed refund changes nothing. Refunded orders no longer count as revenue.
 - Customers: list/search customer accounts with order count, amount spent and review count; view an account's recent orders and reviews; disable and re-enable an account. A disabled account cannot sign in (told so only after the correct password) and its existing sessions are rejected on their next request. Admin accounts cannot be disabled here.
 - Reviews: list/search all reviews (text, product, customer; filter by rating) and delete any review; the product rating is recomputed.
@@ -155,7 +156,7 @@ Paginated responses: `{ "items": [...], "page": 1, "pageSize": 12, "total": 40, 
 - `POST /orders` `{ shippingAddress: { fullName, line1, line2?, city, postalCode, country, phone? } }` → 201 `{ order, payment: { mode, clientSecret } }` | 409 `OUT_OF_STOCK` | 400 empty cart
 - `GET /orders?page&pageSize` — the customer's order history: **paid orders only** (`PAID` or `REFUNDED`); unpaid checkouts are not purchases and are left out. `GET /orders/:id` still returns an unpaid order so it can be paid.
 - `POST /orders/:id/payment` → `{ mode, clientSecret }` — (re)obtain the payment session for a `PENDING` + `UNPAID` order (e.g. if the provider call failed during checkout or the customer left the payment page)
-- `POST /orders/:id/cancel` (only `PENDING` + `UNPAID`)
+- `POST /orders/:id/cancel` — `PENDING` orders only (409 once shipped); refunds in full and restocks if paid, voids the PaymentIntent if unpaid
 - `POST /orders/:id/pay/mock` (mock mode only)
 
 ### Payments
@@ -245,3 +246,4 @@ Databases must use UTF-8 encoding so names in any script (Burmese, Chinese, acce
 - v1.9 — security hardening: X-Forwarded-For trusted only from a configured number of proxies (`TRUST_PROXY`, default 0) so rate limits cannot be bypassed; admin role re-checked in the database on every admin request; seeding refuses demo passwords in production; the saved shipping address is forgotten on logout.
 - v2.0 — admin moderation: cancel and refund orders (with restock), customer list with disable/enable (blocks sign-in and live sessions), review moderation; `Order.refundedAt`, `User.disabledAt`. Sessions are now checked against the database on every authenticated request.
 - v2.1 — admin photo upload on the product edit page (upload/drag and drop, reorder, remove); `POST /admin/uploads` stores to S3 when configured, else local disk served under `/api/v1/uploads`.
+- v2.2 — customers can cancel their own orders until they ship: `POST /orders/:id/cancel` now also cancels paid `PENDING` orders with a full refund and restock (shipped orders are refused); cancel buttons in the order history and on the order detail page with inline confirmation.
